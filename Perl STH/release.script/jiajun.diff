@@ -1,0 +1,860 @@
+Index: Ganji.CRM.WebUI/Views/TradingCenter/DepositList.cshtml
+===================================================================
+--- Ganji.CRM.WebUI/Views/TradingCenter/DepositList.cshtml	(revision 30413)
++++ Ganji.CRM.WebUI/Views/TradingCenter/DepositList.cshtml	(revision 30583)
+@@ -1,14 +1,11 @@
+ ﻿@{
+-    ViewBag.Title = "充值记录";
++    ViewBag.Title = "用户库存记录";
+     var hasPermission = this.GetCRMUser().HasPermission("/TradingCenter/ModifyBalance");
+ }
+-@using Ganji.CRM.Model.ViewModels.TradingCenter
+-@using Ganji.GeographyDB
+-@using Ganji.CRM.Model.GlobalCode.TradingCenter
+-@using Ganji.CRM.Model.GlobalCode.Common
+-@using Ganji.CRM.Model.Common
+ @using Ganji.CRM.Model.TradingCenter
+-@using System.Web.Script.Serialization;
++
++@model IEnumerable<biz_balance_user_log>
++
+ <style type="text/css">
+     td.success {
+         background-color: #dff0d8;
+@@ -30,13 +27,25 @@
+         width: 400px;
+     }
+ </style>
++
+ <div class="gj-well">
+     @if (ViewData.ContainsKey("AccountId"))
+     {
+-        <a target="blank" href='/HousingAccount/Details?id=@((int)ViewData["AccountId"])'>返回账户详情页</a>
++        <a target="blank" href='/HousingAccount/Details?id=@((int) ViewData["AccountId"])'>返回账户详情页</a>
+     }
+-    <p class="gj-well-tip">充值记录</p>
+-    <table class="table table-bordered table-hover">
++    <p class="gj-well-tip">库存记录-----@ViewBag.UserName </p>
++
++    <table class="table table-bordered" id ="biz-info">
++        <caption>
++            <div class="pagination">
++                <ul>
++                    <li data-bind="css: { disabled: !pagedList().canPrev() }" ><a href="javascript:void(0);" data-bind="click: pagedList().prev" >上一页</a></li>
++                    <li><span data-bind="text: showPagesInfo"></span></li>
++                    <li  data-bind="css: { disabled: !pagedList().canNext() }" ><a href="javascript:void(0);" data-bind="click: pagedList().next">下一页</a></li>
++                    <li><input type="text" class="input-small"  data-bind="value: currentPage"></li>
++                </ul>
++            </div>
++        </caption>
+         <thead>
+             <tr style="background-color: #08c; color: #ffffff" id="tdTest">
+                 <th>合同</th>
+@@ -44,114 +53,73 @@
+                 <th>订单金额</th>
+                 <th>充值时间</th>
+                 <th>充值人</th>
+-                <th>产品</th>
+-                <th>城市</th>
+-                <th>类型</th>
+-                <th>金额(数量)</th>
+-                <th>剩余金额(数量)</th>
+-                <th>开始时间</th>
+-                <th>结束时间</th>
+-                <th>状态</th>
+-                <th>账户类型</th>
+-                @if (ViewData.ContainsKey("CategoryType") && hasPermission)
+-                {
+-                    <th>操作</th>
+-                }
++                <th style="width: 50px">产品</th>
++                <th style="width: 50px">城市</th>
++                <th style="width: 50px">频道</th>
++                <th style="width: 100px">购买量</th>
++                <th style="width: 100px">余量</th>
++                <th style="width: 100px">开始时间</th>
++                <th style="width: 100px">结束时间</th>
++                <th style="width: 50px">退款</th>
++                <th style="width: 100px">账户类型</th>
++                <th style="width: 50px" data-bind="visible:hasPermission">操作</th>
+             </tr>
+         </thead>
+-        <tbody>
+-            @{
+-                var depositList = (List<TCDepositRecordVM>)ViewData["depList"];
+-                var orderIds = depositList.Select(c => c.order_id).Distinct();
+-
+-                int rowCount = 0;
+-                foreach (var orderid in orderIds)
+-                {
+-                    var orderList = depositList.Where(o => o.order_id == orderid);
+-                    int orderCount = orderList.Count();
+-                    var cityIds = orderList.Select(c => c.city_id).Distinct();
+-                    var cityList = GeographyManager.GetAllCities(d => cityIds.Contains(d.city_id));
+-                    int i = 0;
+-                    var classList = new string[] { "success", "error", "warning", "info" };
+-                    foreach (var order in orderList)
+-                    {
+-                        var city = cityList.FirstOrDefault(c => c.city_id == order.city_id);
+-                        Old_Product_Code product;
+-                        Enum.TryParse<Old_Product_Code>(order.product_code, out product);
+-                        var className = classList[((int)product) % 4];
+-                        var soureTypeName = order.source_type == null ? "" : ((SourceType)orderList.Select(o => o.source_type.Value).FirstOrDefault()).GetDescription();
+-                        var contractUrl = order.source_type == null ? "" : ((order.category_type == (int)TCCategory.Housing) && (order.source_type.Value == (int)SourceType.CRM || order.source_type.Value == (int)SourceType.KA)) ? Url.Action("Index", "HousingTask", new { contractId = order.contract_id }) : "";
+-
+-                        int type;
+-                        string categoryTypeName = string.Empty;
+-                        if (!string.IsNullOrEmpty(order.extension.Trim()) && order.category_type == 7 && int.TryParse(order.extension, out type))
+-                        {
+-                            if ((type > 0 && type <= 8) || type == 10)
+-                            {
+-                                categoryTypeName = ((Ganji.CRM.Model.GlobalCode.Housing.AccountBusinessScope)type).GetGlobalCode();
+-                            }
+-                        }
+-                        if (i == 0)
+-                        {
+-                <tr class="@className" log="@order.log_id">
+-                    <td rowspan="@orderCount" style="background-color: #F5F5F5;font-size:larger;font-weight:bold">
+-                        @if (string.IsNullOrEmpty(contractUrl))
+-                        {
+-                            @orderList.Select(o => o.contract_code).FirstOrDefault()
+-                        }
+-                        else
+-                        {
+-                            <a target="_blank" href="@contractUrl">@orderList.Select(o => o.contract_code).FirstOrDefault()</a>
+-                        }
++        <tbody data-bind="foreach: pagedList().currentPageList">
++            <tr>
++                <td >
++                    <a data-bind="visible: contract_url, text: contract_code, attr: { href: contract_url }" target="_blank"></a>
++                    <span data-bind="visible: !contract_url, text: contract_code"></span>
+                     </td>
+-                    <td rowspan="@orderCount" style="background-color: #F5F5F5;font-size:larger;font-weight:bold">@soureTypeName</td>
+-                    <td rowspan="@orderCount" style="background-color: #F5F5F5;font-size:larger;font-weight:bold">@orderList.Select(o => o.price).FirstOrDefault()</td>
+-                    <td rowspan="@orderCount" style="background-color: #F5F5F5;font-size:larger;font-weight:bold">@(order.executed_at != null ? UnixTime.FromUnixTime(order.executed_at.Value).ToString() : "")</td>
+-                    <td rowspan="@orderCount" style="background-color: #F5F5F5;font-size:larger;font-weight:bold">@orderList.Select(o => o.creator_name).FirstOrDefault()</td>
+-                    <td>@(product == null ? "" : product.GetDescription())</td>
+-                    <td>@(city == null ? "" : city.city_name)</td>
+-                    <td>@(((TCCategory)order.category_type).GetDescription())</td>
+-                    <td>@order.amount</td>
+-                    <td>@order.amount_left</td>
+-                    <td>@(order.begin_at == 0 ? "-" : UnixTime.FromUnixTime(order.begin_at).ToString())</td>
+-                    <td>@(order.end_at == int.MaxValue ? "-" : UnixTime.FromUnixTime(order.end_at).ToString())</td>
+-                    <td>@(((BizBalanceUserStatus)order.status).GetDescription())</td>
+-                    <td>@categoryTypeName</td>
+-                    @if (ViewData.ContainsKey("CategoryType") && hasPermission)
+-                    {
+-                        <td>
+-                            <input type="button" class="btn btn-primary btn-small" onclick="openModifyWindow(@order.id,@order.user_id)"  value ="修改"/>
++                <td data-bind="text: source_type_show"></td>
++                <td data-bind="text: price" ></td>
++                <td data-bind="text: executed_at_show" ></td>
++                <td data-bind="text: creator_name" ></td>
++                <td colspan="10">
++                    <table class="table table-bordered table-condensed" width="300px">
++                        <tbody data-bind="foreach:bizRecords">
++                            <tr data-bind="css:$root.showColor($index())">
++                                <td style="width: 50px" data-bind="text:product_name"></td>
++                                <td style="width: 50px" data-bind="text: city_id_show"></td>
++                                <td style="width: 50px"  data-bind="text: category_type_show"></td>
++                                <td style="width: 100px"  data-bind="text: amount"></td>
++                                <td style="width: 100px" data-bind="text: amount_left"></td>
++                                <td style="width: 100px" data-bind="text: begin_at_show"></td>
++                                <td style="width: 100px" data-bind="text: end_at_show"></td>
++                                <td style="width: 50px" data-bind="text: status_show"></td>
++                                <td style="width: 100px" data-bind="text: account_type_show"></td>
++                                <td style="width: 50px" data-bind="visible:$root.hasPermission">
++                                    <input type="button" class="btn btn-primary btn-small" data-bind="click:openModifyWindow" value ="修改"/>
+                         </td>
+-                    }
+                 </tr>
+-                        }
+-                        else
+-                        {
+-                <tr class="@className" log="@order.log_id">
+-                    <td>@(product == null ? "" : product.GetDescription())</td>
+-                    <td>@(city == null ? "" : city.city_name)</td>
+-                    <td>@(((TCCategory)order.category_type).GetDescription())</td>
+-                    <td>@order.amount</td>
+-                    <td>@order.amount_left</td>
+-                    <td>@(order.begin_at == 0 ? "-" : UnixTime.FromUnixTime(order.begin_at).ToString())</td>
+-                    <td>@(order.end_at == int.MaxValue ? "-" : UnixTime.FromUnixTime(order.end_at).ToString())</td>
+-                    <td>@(((BizBalanceUserStatus)order.status).GetDescription())</td>
+-                    <td>@categoryTypeName</td>
+-                    @if (ViewData.ContainsKey("CategoryType") && hasPermission)
+-                    {
+-                        <td>
+-                            <input type="button" class="btn btn-primary btn-small" onclick="openModifyWindow(@order.id,@order.user_id)"  value ="修改"/>
++                        </tbody>
++                    </table>
++
+                         </td>
+-                    }
+                 </tr>
+-                        }
+-                        i++;
+-                        rowCount++;
+-                    }
+-                }
+-            }
+         </tbody>
+     </table>
++</div>
++
++<div class="gj-well">
++    <p class="gj-well-tip">日志操作记录</p>
++    <div style="width: 100%; margin-top: 20px">
++        @(Html.Telerik().Grid<biz_balance_user_log>()
++              .BindTo(Model)
++              .Name("库存操作日志")
++              .Columns(columns =>
++                       {
++                           columns.Bound(o => o.id).Hidden();
++                           columns.Bound(o => o.creator_name).Title("操作人").Width(50);
++                           columns.Template(o => UnixTime.FromUnixTime(o.created_at).ToString("yyy-MM-dd HH:mm:ss")).Title("操作时间").Width(150);
++                           columns.Bound(o => o.remark).Title("操作信息");
++                       })
++              .Resizable(resize => resize.Columns(true))
++              .Pageable())
++
++    </div>
++</div>
++
+     <div id="myModal" class="modal hide fade">
+         <div class="modal-header">
+             <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+@@ -161,6 +129,7 @@
+             <form class="form-horizontal" id="modify_form">
+                 <input type="hidden" name="user_id" id="hidUserId" />
+                 <input type="hidden" name="id" id="hidId" />
++                <input type="hidden" name="id" id="hidCategoryType" />
+                 <div class="control-group">
+                     <label class="control-label" for="txtAmount">金额(数量):</label>
+                     <div class="controls">
+@@ -176,22 +145,22 @@
+                 <div class="control-group">
+                     <label class="control-label" for="created_date">创建时间:</label>
+                     <div class="controls">
+-                        @Html.Telerik().DatePicker().Name("created_date").ButtonTitle("选择日期").Format("yyyy/MM/dd 00:00:00").HtmlAttributes(new { style = "width:245px" })
++                        @Html.Telerik().DatePicker().Name("created_date").ButtonTitle("选择日期").Format("yyyy/MM/dd 00:00:00").HtmlAttributes(new {style = "width:245px"})
+                     </div>
+                 </div>
+                 <div class="control-group">
+                     <label class="control-label" for="start_date">开始时间:</label>
+                     <div class="controls">
+-                        @Html.Telerik().DatePicker().Name("start_date").ButtonTitle("选择日期").Format("yyyy/MM/dd 00:00:00").HtmlAttributes(new { style = "width:245px" })
++                        @Html.Telerik().DatePicker().Name("start_date").ButtonTitle("选择日期").Format("yyyy/MM/dd 00:00:00").HtmlAttributes(new {style = "width:245px"})
+                     </div>
+                 </div>
+                 <div class="control-group">
+                     <label class="control-label" for="end_date">结束时间:</label>
+                     <div class="controls">
+-                        @Html.Telerik().DatePicker().Name("end_date").ButtonTitle("选择日期").Format("yyyy/MM/dd 23:59:59").HtmlAttributes(new { style = "width:245px" })
++                        @Html.Telerik().DatePicker().Name("end_date").ButtonTitle("选择日期").Format("yyyy/MM/dd 23:59:59").HtmlAttributes(new {style = "width:245px"})
+                     </div>
+                 </div>
+-                <div class="control-group">
++                <div class="control-group" id="isHousingUse">
+                     <label class="control-label" for="selExtension">账户类型:</label>
+                     <div class="controls">
+                         <select id="selExtension" name="extension" style="width: 225px">
+@@ -205,52 +174,80 @@
+             </form>
+         </div>
+         <div class="modal-footer">
+-            <input type="button" class="btn btn-primary btn-large" onclick="closeModifyWindow()" value="关闭" />
+-            <input type="button" class="btn btn-primary btn-large" onclick="saveModified()" value="保存" />
++            <input type="button" class="btn btn-primary btn-large" onclick=" closeModifyWindow() " value="关闭" />
++            <input type="button" class="btn btn-primary btn-large" onclick=" saveModified() " value="保存" />
+         </div>
+     </div>
+-</div>
+-<script type="text/javascript">
+-    var logs=@(ViewData.ContainsKey("logs") ? Html.Raw(ViewData["logs"].ToString()) : Html.Raw("{}"));
+-    //var getPlacement = function($el) {
+-    //    var offset = $el.offset(),
+-    //        top = offset.top,
+-    //        left = offset.left,
+-    //        height = $(document).outerHeight(),
+-    //        width = $(document).outerWidth(),
+-    //        vert = 0.5 * height - top,
+-    //        vertPlacement = vert > 0 ? 'bottom' : 'top',
+-    //        horiz = 0.5 * width - left,
+-    //        horizPlacement = horiz > 0 ? 'right' : 'left',
+-    //        placement = Math.abs(horiz) > Math.abs(vert) ? horizPlacement : vertPlacement;
+-    //    return placement;
+-    //};
++   
++
++@section footer{
++
++    <script type="text/javascript">
++
+     $(function() {
+-        $("tr[log]").each(function() {
+-            var log = {};
+-            if ($(this).attr("log") != "0") {
+-                for (var i = 0; i < logs.length; i++) {
+-                    if (logs[i].id == $(this).attr("log")) {
+-                        log = logs[i];
+-                        break;
++            var depositLogVm = (function() {
++                var self = this;
++                var cssList = ["success", "error", "warning", "info"];
++
++                self.showColor = function(index) {
++                    return cssList[index % 4];
++                };
++
++                var groupOrderObj = {};
++                var allBizList = @(ViewData.ContainsKey("AllBizListJson") ? Html.Raw(ViewData["AllBizListJson"].ToString()) : Html.Raw("{}"));
++                for (var i = 0; i < allBizList.length; i++) {
++                    var bizRecord = allBizList[i];
++                    if (groupOrderObj[bizRecord.order_id]) {
++                        groupOrderObj[bizRecord.order_id].bizRecords.push(bizRecord);
++                    } else {
++                        groupOrderObj[bizRecord.order_id] = bizRecord;
++                        groupOrderObj[bizRecord.order_id].bizRecords = [bizRecord];
+                     }
+                 }
+-                var data = "<table class='table table-bordered'><tr><td>创建人</td><td id='tdCreator'>" + log.creator_name + "</td><td>创建时间</td><td id='tdCreatAt'>" + new Date(log.created_at * 1000).toLocaleString() + "</td></tr><tr><td>备注</td><td colspan='3' id='tdRemark'>" + log.remark + "</td></tr></table>";
+ 
+-                $(this).popover({
+-                    title: "日志",
+-                    html: true,
+-                    trigger: "hover",
+-                    content: data,
+-                    placement: "top"
++                var groupOrderList = [];
++                for (var key in groupOrderObj) {
++                    groupOrderList.push(groupOrderObj[key]);
++                }
++
++                // 权限
++                self.hasPermission = ko.observable('@hasPermission' == 'True');
++
++                // paged sth
++                self.pagedList = ko.observable(new PagedList({ originalList: groupOrderList }));
++                self.showPagesInfo = ko.computed(function() {
++                    return (self.pagedList().currentPage() + 1) + "/" + (self.pagedList().totalPage() + 1);
+                 });
++
++                self.currentPage = ko.computed({
++                    read: function() { return self.pagedList().currentPage() + 1 ;},
++                    write: function(value) {
++                        value = parseInt(value);
++                        if (isNaN(value) || value < 1 || value > self.pagedList().totalPage() + 1) {
++                            value = 1;
+             }
++                        self.pagedList().currentPage(value-1);
++                    },
++                    owner: self,
+         });
++
++                return self;
++            })();
++
++
++            ko.applyBindings(depositLogVm, $("#biz-info")[0]);
++
+     });
+ 
+-    function openModifyWindow(id,userid) {
++        function openModifyWindow(bizRecord) {
++            if (!bizRecord) {
++                return;
++            }
++            var id = bizRecord.id;
++            var userid = bizRecord.user_id;
++
+         $.ajax({
+-            url:'@Url.Action("GetBalance")',
++                url: '@Url.Action("GetBalance")',
+             type: 'POST',
+             data: { id: id, userid: userid },
+             dataType: 'json',
+@@ -264,6 +261,14 @@
+                     $("#end_date").val(data.data.end_date);
+                     $("#created_date").val(data.data.created_date);
+                     $("#selExtension").val(data.data.extension);
++                        $("#hidCategoryType").val(data.data.category_type);
++
++                        if (data.data.category_type != 7) {
++                            $("#isHousingUse").hide();
++                        } else {
++                            $("#isHousingUse").show();
++                        }
++
+                     $("#myModal").modal("show");
+                 } else {
+                     alert("获取库存失败。");
+@@ -314,5 +319,7 @@
+         $("#created_date").val("");
+         $("#selExtension").val("");
+     }
+-</script>
+-
++    </script>
++    
++    
++}
+Index: Ganji.CRM.Model/ViewModels/TradingCenter/TCDepositRecordVM.cs
+===================================================================
+--- Ganji.CRM.Model/ViewModels/TradingCenter/TCDepositRecordVM.cs	(revision 30413)
++++ Ganji.CRM.Model/ViewModels/TradingCenter/TCDepositRecordVM.cs	(revision 30583)
+@@ -2,6 +2,9 @@
+ using System.Collections.Generic;
+ using System.Linq;
+ using System.Text;
++using Ganji.CRM.Model.Common;
++using Ganji.CRM.Model.GlobalCode.TradingCenter;
++using Ganji.Framework.Systems;
+ 
+ namespace Ganji.CRM.Model.ViewModels.TradingCenter
+ {
+@@ -68,5 +71,86 @@
+         public string end_date { get; set; }
+         public string created_date { get; set; }
+         public string product_name { get; set; }
++
++        #region 4 show
++
++
++        public string contract_url { get; set; }
++
++        public string city_id_show
++        {
++            get
++            {
++                var cityName = city_id == -1 ? "全国" : string.Empty;
++                var cityInfo = GeographyDB.GeographyManager.GetCityById(city_id);
++                if (cityInfo != null)
++                {
++                    cityName = cityInfo.city_name;
+     }
++                return cityName;
++            }
++        }
++
++        public string source_type_show { get { return source_type.HasValue ? ((SourceType)source_type).GetGlobalCode():""; } }
++
++        public string executed_at_show
++        {
++            get
++            {
++                return executed_at.HasValue ? UnixTime.FromUnixTime(executed_at.Value).ToString("yyyy-MM-dd HH:mm:ss") : "";
++            }
++        }
++
++        public string account_type_show
++        {
++            get
++            {
++                string accountTypeName = string.Empty;
++                int type;
++                if (!string.IsNullOrEmpty(extension.Trim()) && category_type == 7 && int.TryParse(extension, out type))
++                {
++                    if ((type > 0 && type <= 8) || type == 10)
++                    {
++                        accountTypeName =
++                            ((Ganji.CRM.Model.GlobalCode.Housing.AccountBusinessScope) type).GetGlobalCode();
++                    }
++                }
++                return accountTypeName;
++            }
++        }
++
++        public string category_type_show
++        {
++            get
++            {
++                return ((TCCategory) category_type).GetDescription();
++            }
++        }
++
++        public string begin_at_show
++        {
++            get
++            {
++                return begin_at != 0 ? UnixTime.FromUnixTime(begin_at).ToString("yyyy-MM-dd HH:mm:ss") : "-";
++            }
++        }
++
++        public string end_at_show
++        {
++            get
++            {
++                return end_at == int.MaxValue ? "-" : UnixTime.FromUnixTime(end_at).ToString("yyyy-MM-dd HH:mm:ss");
++            }
++        }
++
++        public string status_show
++        {
++            get
++            {
++                return status == 2 ? "已退款" : "";
++            }
++        }
++        
++        #endregion
++    }
+ }
+Index: Ganji.CRM.Service/TradingCenter/TradingCenterService.cs
+===================================================================
+--- Ganji.CRM.Service/TradingCenter/TradingCenterService.cs	(revision 30413)
++++ Ganji.CRM.Service/TradingCenter/TradingCenterService.cs	(revision 30583)
+@@ -5,6 +5,8 @@
+ using System.Net.Sockets;
+ using System.Text;
+ using System.Text.RegularExpressions;
++using System.Transactions;
++using Ganji.ClassificationDB;
+ using Ganji.CRM.DAC.Application;
+ using Ganji.CRM.DAC.Application.Product;
+ using Ganji.CRM.DAC.Channel;
+@@ -33,6 +35,7 @@
+ using Ganji.Framework.Systems.Common;
+ using Newtonsoft.Json;
+ using Ganji.CRM.Model.GlobalCode.Common;
++using IsolationLevel = System.Transactions.IsolationLevel;
+ using Order = Ganji.CRM.Service.TCService.Order;
+ 
+ namespace Ganji.CRM.Service.TradingCenter
+@@ -117,7 +120,12 @@
+             var tableName = BizBalanceUser.GetTableName(userid);
+             var sql =
+                 string.Format(
+-                    "select tc.order_code,tc.price,tc.executed_at,tc.source_type,tc.contract_id,tc.contract_code,tc.creator,tc.creator_name,bbu.id,bbu.user_id,bbu.order_id,bbu.amount,bbu.amount_left,bbu.begin_at,bbu.end_at,bbu.created_at,bbu.status,bbu.product_code,bbu.city_id,bbu.category_type,bbu.extension,bbu.log_id from {0} bbu left join tc_order tc on bbu.order_id = tc.id where bbu.user_id = {1}",
++                    @"select tc.order_code,tc.price,tc.executed_at,tc.source_type,
++tc.contract_id,tc.contract_code,tc.creator,tc.creator_name,bbu.id,bbu.user_id,
++bbu.order_id,bbu.amount,bbu.amount_left,bbu.begin_at,bbu.end_at,bbu.created_at,
++bbu.status,bbu.product_code,bbu.city_id,bbu.category_type,bbu.extension,bbu.log_id 
++from {0} bbu left join tc_order tc on bbu.order_id = tc.id 
++where bbu.user_id = {1}",
+                     tableName, userid);
+             if (cagegoryType.HasValue)
+             {
+@@ -146,25 +154,38 @@
+             {
+                 string sql =
+                     string.Format(
+-                        "select id,amount,amount_left,extension,begin_at,end_at,product_code,category_type,user_id,created_at from trading_center.`biz_balance_user_{0}` where user_id = {1} and category_type=7 and id = {2};",
+-                        userid % 10, userid, balanceId);
+-                var result = db.Database.SqlQuery<TCDepositRecordVM>(sql);
+-                var res = result != null ? result.FirstOrDefault() : null;
+-                if (res != null && res.category_type == 7)
++                        @"select id,amount,amount_left,extension,
++begin_at,end_at,product_code,category_type,user_id,created_at 
++from trading_center.`biz_balance_user_{0}` where user_id = {1} and id = {2};",
++                        userid%10, userid, balanceId);
++                var result = db.Database.SqlQuery<TCDepositRecordVM>(sql).FirstOrDefault();
++                if (result != null)
+                 {
+-                    res.start_date = UnixTime.FromUnixTime(res.begin_at).ToString();
+-                    res.end_date = UnixTime.FromUnixTime(res.end_at).ToString();
+-                    res.created_date = UnixTime.FromUnixTime(res.created_at).ToString();
+-                    Old_Product_Code product;
+-                    Enum.TryParse<Old_Product_Code>(res.product_code, out product);
+-                    res.product_name = product.GetDescription();
++                    var productInfo = new TradingCenterService.CommodityProductInfo()
++                        .UseGetAllInUseProductsQuery()
++                        .QueryResult()
++                        .FirstOrDefault(item => item.code == result.product_code);
++
++                    result.start_date = UnixTime.FromUnixTime(result.begin_at).ToString();
++                    result.end_date = UnixTime.FromUnixTime(result.end_at).ToString();
++                    result.created_date = UnixTime.FromUnixTime(result.created_at).ToString();
++                    result.product_name = productInfo == null ? string.Empty : productInfo.name;
+                 }
+-                return res;
++                return result;
+             }
+         }
+ 
+-        public bool ModifyBalance(TCDepositRecordVM model)
++        public void ModifyBalance(TCDepositRecordVM model, int opId, string opName)
+         {
++            using (var trans = new TransactionScope(TransactionScopeOption.Required, new TransactionOptions()
++                                                                                     {
++                                                                                         IsolationLevel =
++                                                                                             IsolationLevel
++                                                                                             .RepeatableRead,
++                                                                                         Timeout =
++                                                                                             new TimeSpan(0, 0, 10)
++                                                                                     }))
++            {
+             using (var db = new TradingCenterContainer(DataBaseConnect.WriteTradingCenterDb))
+             {
+                 //获取库存
+@@ -172,26 +193,63 @@
+                     db.Database.SqlQuery<TCDepositRecordVM>(
+                         string.Format(
+                             "select id,amount,amount_left,extension,begin_at,end_at,category_type,user_id,created_at from trading_center.`biz_balance_user_{0}` where id={1} limit 1;",
+-                            model.user_id % 10, model.id));
+-                if (balance != null)
++                                model.user_id%10, model.id)).FirstOrDefault();
++                    if (balance == null
++                        || (balance.begin_at == model.begin_at
++                            && balance.end_at == model.end_at
++                            && balance.amount == model.amount
++                            && balance.amount_left == model.amount_left
++                            && balance.extension == model.extension
++                            && balance.created_at == model.created_at))
+                 {
+-                    //库存存在并且本次没有任何修改则直接返回成功
+-                    var b = balance.FirstOrDefault();
+-                    if (b != null && b.begin_at == model.begin_at && b.end_at == model.end_at &&
+-                        b.amount == model.amount && b.amount_left == model.amount_left && b.extension == model.extension
+-                        && b.created_at == model.created_at)
+-                        return true;
++                        return;
+                 }
+-                string sql =
++
++                    string updateSql = string.Format(
++                        @"update trading_center.`biz_balance_user_{0}` 
++                      set amount={1},amount_left={2},begin_at={3},end_at={4},created_at={5}  
++                      where  id = {6};",
++                        model.user_id%10, model.amount, model.amount_left, model.begin_at,
++                        model.end_at,
++                        model.created_at, model.id);
++
++                    if (balance.category_type == CategoryDefinition.HOUSING)
++                    {
++                        updateSql =
+                     string.Format(
+                         "update trading_center.`biz_balance_user_{0}` set amount={1},amount_left={2},extension={3},begin_at={4},end_at={5},created_at={6}  where category_type=7 and id = {7};",
+-                        model.user_id % 10, model.amount, model.amount_left, model.extension, model.begin_at, model.end_at,
++                                model.user_id%10, model.amount, model.amount_left, model.extension, model.begin_at,
++                                model.end_at,
+                         model.created_at, model.id);
+-                return db.Database.ExecuteSqlCommand(sql) > 0;
+             }
++
++                    var affectRows = db.Database.ExecuteSqlCommand(updateSql);
++                    if (affectRows > 0)
++                    {
++                        string logSql = string.Format(@"
++INSERT INTO `trading_center`.`biz_balance_user_log`
++            (`creator`,
++             `creator_name`,
++             `created_at`,
++             `remark`,
++             `type`,
++             `user_id`)
++VALUES ('{0}',
++        '{1}',
++        '{2}',
++        '对库存进行人工调整:{4}',
++        '4',
++        '{3}');
++", opId, opName, UnixTime.FromDateTime(DateTime.Now), model.user_id, updateSql);
++                        db.Database.ExecuteSqlCommand(logSql);
+         }
++                }
+ 
++                trans.Complete();
++            }
++        }
+ 
++
+         public IEnumerable<biz_balance_user_log> GetBizBalanceUserLog(Func<biz_balance_user_log, bool> func)
+         {
+             using (var db = new TradingCenterContainer(DataBaseConnect.ReadTradingCenterDb))
+Index: Ganji.CRM.WebUI/Controllers/TradingCenter/TradingCenterController.cs
+===================================================================
+--- Ganji.CRM.WebUI/Controllers/TradingCenter/TradingCenterController.cs	(revision 30413)
++++ Ganji.CRM.WebUI/Controllers/TradingCenter/TradingCenterController.cs	(revision 30583)
+@@ -6,10 +6,13 @@
+ using Ganji.CRM.Model.GlobalCode.Bang;
+ using Ganji.CRM.Model.GlobalCode.DataBase;
+ using Ganji.CRM.Model.GlobalCode.Store;
++using Ganji.CRM.Model.GlobalCode.TradingCenter;
++using Ganji.CRM.Model.ViewModels.Application;
+ using Ganji.CRM.Model.ViewModels.Application.AdApplicatioin.AdExt;
+ using Ganji.CRM.Model.ViewModels.TradingCenter;
+ using Ganji.CRM.Service.Application.Product.Order;
+ using Ganji.CRM.Service.Sales.AdInfoExt;
++using Ganji.CRM.Service.Ucenter;
+ using Ganji.Framework.Systems;
+ using Ganji.Framework.Systems.Mvc;
+ using Ganji.GeographyDB;
+@@ -260,23 +263,18 @@
+ 
+         public ActionResult DepositList(int userId, int? categoryType)
+         {
+-            var tcService = new TradingCenterService();
+-            //string[] productCodes = new string[] { "pd_house_premier", "pd_house_bidding", "pd_house_rest", "pd_house_rest_refresh" };
+-            var depList = tcService.GetAllDepositList(userId, null, categoryType);
+-            if (depList.Count() > 0)
++            ViewData["IsBootstrap"] = true;
++            var userName = userId.ToString();
++            if (userId > 0)
+             {
+-                var logids = depList.Where(b => b.order_id == 0 && b.log_id != null).Select(b => b.log_id);
+-                if (logids != null && logids.Count() > 0)
++                var userInfo = UserAuthService.GetUserById(userId);
++                if (userInfo != null)
+                 {
+-                    var logs = tcService.GetBizBalanceUserLog(b => logids.Contains(b.id));
+-                    if (logs != null && logs.Count() > 0)
+-                    {
+-                        JavaScriptSerializer jss = new JavaScriptSerializer();
+-                        var logStr = jss.Serialize(logs);
+-                        ViewData["logs"] = logStr;
++                    userName = userInfo.UserName ?? userInfo.Email;
+                     }
+                 }
+-            }
++            ViewBag.UserName = userName;
++
+             if (categoryType.HasValue && categoryType.Value == 7)
+             {
+                 ViewData["CategoryType"] = categoryType;
+@@ -287,11 +285,44 @@
+                 }
+             }
+ 
+-            ViewData["IsBootstrap"] = true;
+-            ViewData["depList"] = depList;
+-            return View();
++            var tcService = new TradingCenterService();
++            var depList = tcService.GetAllDepositList(userId, null, categoryType).OrderByDescending(item=>item.id).ToList();
++            var vm = new List<biz_balance_user_log>();
++            if (depList.Count > 0)
++            {
++                var productInfos = new TradingCenterService.CommodityProductInfo()
++                    .UseGetAllInUseProductsQuery()
++                    .QueryResult();
++
++                depList.ForEach(item =>
++                                {
++                                    var productInfo = productInfos.FirstOrDefault(p => p.code == item.product_code);
++                                    item.product_name = productInfo == null ? string.Empty : productInfo.name;
++                                    var contractUrl = string.Empty;
++                                    if (item.source_type == (int) SourceType.CRM
++                                        || item.source_type == (int) SourceType.KA)
++                                    {
++                                        contractUrl = item.category_type == (int) TCCategory.Housing
++                                                          ? Url.Action("Index", "HousingTask",
++                                                                       new {contractId = item.contract_id})
++                                                          : Url.Action("Details", "Application",
++                                                                       new
++                                                                       {
++                                                                           id = item.contract_id,
++                                                                           model = "window",
++                                                                           type = (int) OperatingType.SeeByContract
++                                                                       });
+         }
++                                    item.contract_url = contractUrl;
++                                });
+ 
++                vm = tcService.GetBizBalanceUserLog(b => b.user_id == userId).ToList();
++            }
++
++            ViewData["AllBizListJson"] = JsonConvert.SerializeObject(depList);
++            return View(vm);
++        }
++
+         public ActionResult GetBalance(int id, int userid)
+         {
+             var balance = new TradingCenterService().GetBalance(id, userid);
+@@ -301,22 +332,31 @@
+         public ActionResult ModifyBalance(TCDepositRecordVM model)
+         {
+             string msg = string.Empty;
+-            if (!string.IsNullOrEmpty(model.start_date) && !string.IsNullOrEmpty(model.end_date) && model.amount >= 0 &&
+-                model.amount_left >= 0 && !string.IsNullOrEmpty(model.extension) && model.user_id > 0 && model.id > 0)
++            if (string.IsNullOrEmpty(model.start_date)
++                || string.IsNullOrEmpty(model.end_date)
++                || model.amount < 0
++                || model.amount_left < 0
++                || model.user_id <= 0
++                || model.id <= 0
++                || (string.IsNullOrEmpty(model.extension) && model.category_type == CategoryDefinition.HOUSING))
+             {
+-                model.begin_at = (int)UnixTime.FromDateTime(DateTime.Parse(model.start_date).Date);
+-                model.end_at =
+-                    (int)UnixTime.FromDateTime(DateTime.Parse(model.end_date).Date.AddDays(1).AddSeconds(-1));
+-                model.created_at = (int)UnixTime.FromDateTime(DateTime.Parse(model.created_date));
++                msg = "����д��ȷ��Ϣ��Ȼ�����޸ģ�";
++                return Json(new {succeed = false, msg = msg});
+             }
+-            else
++
++            model.begin_at = (int) UnixTime.FromDateTime(DateTime.Parse(model.start_date).Date);
++            model.end_at = (int) UnixTime.FromDateTime(DateTime.Parse(model.end_date).Date.AddDays(1).AddSeconds(-1));
++            model.created_at = (int) UnixTime.FromDateTime(DateTime.Parse(model.created_date));
++            try
+             {
+-                msg = "����д��ȷ��Ϣ��Ȼ�����޸ģ�";
+-                return Json(new { succeed = false, msg = msg });
++                new TradingCenterService().ModifyBalance(model, CRMUser.UserId, CRMUser.FullName);
++                return Json(new {succeed = true, msg = "�������޸�,��ˢ��ҳ��"});
+             }
+-            var result = new TradingCenterService().ModifyBalance(model);
+-            return Json(new { succeed = result, msg = result != true ? "��������ʧ��" : msg });
++            catch (Exception ex)
++            {
++                return Json(new {succeed = false, msg = "��������ʧ��" + ex.Message});
+         }
++        }
+ 
+         public ActionResult GetCommodityProducts(string q, int? limit)
+         {
+Index: Ganji.CRM.WebUI/Scripts/core.js
+===================================================================
+--- Ganji.CRM.WebUI/Scripts/core.js	(revision 30413)
++++ Ganji.CRM.WebUI/Scripts/core.js	(revision 30583)
+@@ -608,3 +608,49 @@
+     };
+ }
+ 
++function PagedList(option) {
++    var defaultOption = { pageSize: 5, originalList: [] };
++    var self = $.extend(defaultOption, option);
++
++    self.currentPage = ko.observable(0);
++    self.totalPage = ko.observable(0);
++
++    if (self.originalList.length > 0) {
++        self.totalPage(Math.ceil(self.originalList.length / self.pageSize) - 1);
++    }
++
++    self.canPrev = ko.computed(function () {
++        return self.currentPage() > 0;
++    });
++    self.canNext = ko.computed(function () {
++        return self.totalPage() > self.currentPage();
++    });
++
++    self.currentPageList = ko.computed(function () {
++        var startIndex = self.currentPage() * self.pageSize;
++        var endIndex = startIndex + self.pageSize;
++        return self.originalList.slice(startIndex, endIndex);
++    });
++
++    // change page
++    self.prev = function () {
++        changePage(false);
++    };
++    self.next = function () {
++        changePage(true);
++    };
++
++    function changePage(isNext) {
++        var pageNum = isNext ? 1 : -1;
++        var currPage = self.currentPage() + pageNum;
++
++        var noNeedDoChange = isNext ? currPage > self.totalPage() : currPage < 0;
++        if (noNeedDoChange) {
++            return;
++        }
++
++        self.currentPage(currPage);
++    }
++
++    return self;
++}
+\ No newline at end of file
+

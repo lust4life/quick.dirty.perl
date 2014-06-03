@@ -1,0 +1,13 @@
+digraph crmContract{
+        ad_contract->contract_track_log;
+        ad_contract->ad_contract_executive; // 合同执行信息
+        ad_contract->contract_paymenttypes; // 合同付款方式
+        ad_contract->order;
+        order->order_package;
+        order->order_product;
+        order_package->order_product;
+        ad_contract->opportunity_operation_queue;
+        ad_contract->contract_charges;
+        ad_contract->SaveFRCContract;
+        contract_charges->charges_track_log;
+}

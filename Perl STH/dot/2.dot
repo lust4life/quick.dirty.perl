@@ -1,0 +1,16 @@
+﻿digraph G{
+        edge [fontname="Microsoft YaHei"];
+        node [shape=box, fontname="Microsoft YaHei" size="20,20"];
+        character_stream [label="字符流123abc哈哈是跌"];
+        main->parse->execute;
+        main->init;
+        main->cleanup;
+        execute->make_string;
+        execute->printf;
+        init->make_string;
+        main->printf;
+        main->make_love;
+        edge[color=red];
+        execute->compard;
+        execute->回家; 
+}

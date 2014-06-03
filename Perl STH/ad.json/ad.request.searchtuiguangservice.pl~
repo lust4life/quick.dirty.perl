@@ -1,0 +1,51 @@
+use 5.16.1;
+
+my $url_pattern = qr//;
+my $total_str;
+my $count = 0;
+use Time::HiRes qw(gettimeofday);
+my $start_microsec = &get_microsec_now();
+
+for(glob "*.log"){
+  open FH,"<$_" or die "can not open $_ :$!";
+  while(<FH>){
+    if($_ =~ $url_pattern){
+      $total_str .= $_;
+      $count++;
+    }
+  }
+}
+
+my $end_microsec = &get_microsec_now();
+my $time_used    = ( $end_microsec - $start_microsec );
+say qq(\n\n================>);
+printf( "search time used  : %.4f s\n", $time_used );
+say qq();
+say $count;
+say qq();
+
+
+#say "\nDumper\n";
+#use YAML;
+#say Dump(%adType_url_hash);
+#use Data::Dumper;
+#say Dumper(%adType_url_hash);
+
+
+# write into file
+
+$start_microsec = &get_microsec_now();
+
+open WH, ">>result.txt" or die "can not create file result.txt :$!";
+say WH $total_str;
+
+$end_microsec = &get_microsec_now();
+$time_used    = ( $end_microsec - $start_microsec );
+say qq(\n\n================>);
+printf( "write file time used  : %.4f s\n", $time_used );
+say qq(\nEnd\n);
+
+sub get_microsec_now {
+    my ( $sec, $microsec ) = gettimeofday;
+    return $sec + $microsec / 1000000;
+}

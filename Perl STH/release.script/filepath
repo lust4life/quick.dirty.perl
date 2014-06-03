@@ -1,0 +1,38 @@
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/ApplyExpand.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Ganji.CRM.WebUI.csproj
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Scripts/BootstrapKnockout/bootstrap/css/bootstrap.min.css
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/_ViewStart.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Model/GlobalCode/CommodityAPI/CommodityTypeDefine.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Controllers/Order/AccountResolver/TrainingBangResover.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Controllers/Advertisement/KAAdvertController.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/KAAdvert/AdEditor.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/OrderExtention/ZhaoPinExpandExtViewer.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/OrderViewer.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Application/Product/Order/OrderServiceByOrderType/ZhaoPinOrderService.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/ApplyCommodity.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/SelectSalesProduct.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Controllers/Order/OrderController.partial.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Application/Details.aspx
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Common/CommodityAPIService.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/OrderExtention/ZhaoPinExtViewer.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Order/SaveSuccess.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Application/Product/Order/OrderServiceBase.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Scripts/BootstrapKnockout/expand-order/ExpandOrder.js
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Application/Product/Order/TcOrderProcess/TcOrderStrategy.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/AppSettings/order.config
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Scripts/core.js
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/web.config
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Service References/TCService/OrderService.wsdl
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Service References/TCService/Reference.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Service References/TCService/order2.xsd
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Service References/TCService/order4.xsd
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Scripts/BootstrapKnockout/bootstrap/css/bootstrap.css
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Scripts/BootstrapKnockout/expand-order
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Model/GlobalCode/Contract/ApplicationType.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Application/Base/ApplicationEventHandlerDictionary.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/Application/Product/AdApplication.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.Service/TradingCenter/TradingCenterService.cs
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/AppSettings/OrderConfig/AllCommodities.json
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Shared/_BootStrapLayout.cshtml
+/03 开发/trunk/赶集网CRM系统V4/Ganji.CRM.WebUI/Views/Shared/_SimpleLayout.cshtml
+/03 开发/trunk/赶集网CRM系统V4/赶集网CRM系统V4 - jiajun.sln

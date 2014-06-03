@@ -1,0 +1,89 @@
+use strict;
+use warnings;
+use feature qw(say);
+
+say qq/\nthis is some test string : hello come on : )\n/;
+
+my @ad_types = (3, 4, 7, 12, 21, 25, 20, 58, 56, 51, 54, 53, 55, 57, 59, 52);
+my $url_head = q(http://jiajuntuiguang.ganji.com/adrender.aspx?);
+
+
+my %adType_url_hash = ();
+my $count = 0;
+
+use Time::HiRes qw(gettimeofday);
+my $start_microsec = &get_microsec_now();
+
+
+my $url_pattern = qr/\.aspx (.*)(&at=.+?) /;
+my $at_param_pattern = qr/(&at=.+?)(&.+?)/;
+for(glob "*.log"){
+  open FH,"<$_" or die "can not open file $_ : $!";
+  while(<FH>){
+    #chomp;
+    if($_ =~ $url_pattern){
+      my $url_before_at_param = $1;
+      my $url_after_at_param = $2;
+      my $url_at_param =$url_after_at_param;
+      if($url_after_at_param =~ $at_param_pattern){
+	$url_before_at_param .= $2;
+	$url_at_param = $1;
+      }
+      my $url_we_need = $url_head . $url_before_at_param;
+
+      if($url_at_param =~ m/&at=(.+)/){
+	my @ad_types_in_url = split('%2C', $1);
+	my %m = ();
+	my %n = ();
+	for(@ad_types,@ad_types_in_url){
+	  $m{$_}++ && $n{$_}++;
+	}
+	for(keys %n){
+	  ${$adType_url_hash{$_}}{$url_we_need} = undef
+	    if keys %{$adType_url_hash{$_}} < 2000;
+	}
+      }
+      $count++;
+      say $count unless $count % 10000 ;
+      #last if $count > 2;
+    }
+  }
+}
+
+
+my $end_microsec = &get_microsec_now();
+my $time_used    = ( $end_microsec - $start_microsec );
+say qq(\n\n================>);
+printf( "time used  : %.4f s\n", $time_used );
+say qq();
+say $count;
+say qq();
+
+
+#say "\nDumper\n";
+#use YAML;
+#say Dump(%adType_url_hash);
+#use Data::Dumper;
+#say Dumper(%adType_url_hash);
+
+
+# write into file
+
+$start_microsec = &get_microsec_now();
+
+for(keys %adType_url_hash){
+  open WH, ">>$_" or die "can not create file $_ :$!";
+  say WH join("\n", keys %{$adType_url_hash{$_}});
+}
+
+$end_microsec = &get_microsec_now();
+$time_used    = ( $end_microsec - $start_microsec );
+say qq(\n\n================>);
+printf( "write file time used  : %.4f s\n", $time_used );
+say qq(\nEnd\n);
+
+sub get_microsec_now {
+    my ( $sec, $microsec ) = gettimeofday;
+    return $sec + $microsec / 1000000;
+}
+

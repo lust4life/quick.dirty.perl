@@ -1,0 +1,34 @@
+Ganji.CRM.Model/GlobalCode/CommodityAPI/CommodityTypeDefine.cs
+Ganji.CRM.Model/GlobalCode/Contract/ApplicationType.cs
+Ganji.CRM.Service/Application/Base/ApplicationEventHandlerDictionary.cs
+Ganji.CRM.Service/Application/Product/AdApplication.cs
+Ganji.CRM.Service/Application/Product/Order/OrderServiceBase.cs
+Ganji.CRM.Service/Application/Product/Order/OrderServiceByOrderType/ZhaoPinOrderService.cs
+Ganji.CRM.Service/Application/Product/Order/TcOrderProcess/TcOrderStrategy.cs
+Ganji.CRM.Service/Common/CommodityAPIService.cs
+Ganji.CRM.Service/Service References/TCService/OrderService.wsdl
+Ganji.CRM.Service/Service References/TCService/Reference.cs
+Ganji.CRM.Service/Service References/TCService/order2.xsd
+Ganji.CRM.Service/Service References/TCService/order4.xsd
+Ganji.CRM.Service/TradingCenter/TradingCenterService.cs
+Ganji.CRM.WebUI/AppSettings/OrderConfig/AllCommodities.json
+Ganji.CRM.WebUI/AppSettings/order.config
+Ganji.CRM.WebUI/Controllers/Advertisement/KAAdvertController.cs
+Ganji.CRM.WebUI/Controllers/Order/AccountResolver/TrainingBangResover.cs
+Ganji.CRM.WebUI/Controllers/Order/OrderController.partial.cs
+Ganji.CRM.WebUI/Scripts/BootstrapKnockout/bootstrap/css/bootstrap.css
+Ganji.CRM.WebUI/Scripts/BootstrapKnockout/bootstrap/css/bootstrap.min.css
+Ganji.CRM.WebUI/Scripts/BootstrapKnockout/expand-order/ExpandOrder.js
+Ganji.CRM.WebUI/Scripts/core.js
+Ganji.CRM.WebUI/Views/Application/Details.aspx
+Ganji.CRM.WebUI/Views/KAAdvert/AdEditor.cshtml
+Ganji.CRM.WebUI/Views/Order/ApplyCommodity.cshtml
+Ganji.CRM.WebUI/Views/Order/ApplyExpand.cshtml
+Ganji.CRM.WebUI/Views/Order/OrderExtention/ZhaoPinExpandExtViewer.cshtml
+Ganji.CRM.WebUI/Views/Order/OrderExtention/ZhaoPinExtViewer.cshtml
+Ganji.CRM.WebUI/Views/Order/OrderViewer.cshtml
+Ganji.CRM.WebUI/Views/Order/SaveSuccess.cshtml
+Ganji.CRM.WebUI/Views/Order/SelectSalesProduct.cshtml
+Ganji.CRM.WebUI/Views/Shared/_BootStrapLayout.cshtml
+Ganji.CRM.WebUI/Views/Shared/_SimpleLayout.cshtml
+Ganji.CRM.WebUI/Views/_ViewStart.cshtml
