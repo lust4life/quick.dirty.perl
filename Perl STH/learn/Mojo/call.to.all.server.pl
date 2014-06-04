@@ -16,7 +16,7 @@ my $server_infos = $tx->json('/rows') || ();
 #p $server_infos;
 foreach my $server_info(@$server_infos){
   my $url_port =  $server_info->{'cell'}[12] . ':' . $server_info->{'cell'}[13];
-  my $request_url = $url_port . '6/adcache/rebuildcache?donotevil=1401811201';
+  my $request_url = $url_port . '/adcache/rebuildcache?donotevil=1401811201';
   my $request_result = $ua->get($request_url)->res->body;
   $server_infos_hash{$url_port} = {
                                    'request_url' => $request_url,
