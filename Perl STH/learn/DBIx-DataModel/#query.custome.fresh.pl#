@@ -35,9 +35,9 @@ my $tg_db =
   or die qq(unable to connect $GJ::DataSource::tg \n);
 
 my $ms_db =
-  DBI->connect( $ds->ms, GJ::DataSource::User, GJ::DataSource::Pwd,
-    { mysql_enable_utf8 => 1, 'RaiseError' => 1 } )
-  or die qq(unable to connect $GJ::DataSource::ms \n);
+        DBI->connect( $ds->ms, GJ::DataSource::User, GJ::DataSource::Pwd,
+                      { mysql_enable_utf8 => 1, 'RaiseError' => 1 } )
+        or die qq(unable to connect $GJ::DataSource::ms \n);
 
 my $mana_db =
   DBI->connect( $ds->mana, GJ::DataSource::User, GJ::DataSource::Pwd,
@@ -69,7 +69,7 @@ WHERE p.`listing_status` = 5
   AND p.`post_type` = 0 
   AND p.`ad_types` = 0 
   AND p.`agent` = 0 
-  AND p.`company_name` LIKE '%北京%公司%' 
+  AND p.`company_name` LIKE '%±±¾©%¹«Ë¾%' 
   AND p.`post_at` >= UNIX_TIMESTAMP(ADDDATE(CURRENT_DATE(), - 1)) 
   AND p.`major_category` > - 1 
 GROUP BY p.`company_id` 
@@ -83,7 +83,7 @@ my $sth = $ms_db->prepare($sql_normal_company);
 $sth->execute;
 my %company_we_need = ();
 while(my $row = $sth->fetchrow_hashref()){
-  my ($full_name,$puid,$title,$mac_index) = ($row->{company_name},$row->{puid},$row->{title},$row->{major_category});
+    my ($full_name,$puid,$title,$mac_index) = ($row->{company_name},$row->{puid},$row->{title},$row->{major_category});
 
   my $sql_not_in_customer = qq{SELECT c.`CustomerId` FROM gcrm.`customer` c WHERE c.`FullName` = '$full_name' AND  c.`CityId` = 12  LIMIT 1;};
   my $customer_count =  $tg_db->selectrow_array($sql_not_in_customer) // 0;
@@ -104,7 +104,7 @@ WHERE p.`Status` not in (7)
     my $opportunity_count = $tg_db->selectrow_array($sql_not_in_opportunity);
     if($opportunity_count == 0){
       # not in opportunity
-      push  @{$company_we_need{$all_category_in_db_hashref->{$mac_index}->{category_name}}}, {'puid'=>$puid,'公司名称'=>$full_name,'帖子标题'=>$title};
+      push  @{$company_we_need{$all_category_in_db_hashref->{$mac_index}->{category_name}}}, {'puid'=>$puid,'¹«Ë¾Ãû³Æ'=>$full_name,'Ìû×Ó±êÌâ'=>$title};
     }
   }
 }
@@ -117,3 +117,8 @@ say WFH $customer_data;
 close WFH;
 
 say p %company_we_need;
+
+if(f){
+    my $test = 123;
+    
+}
