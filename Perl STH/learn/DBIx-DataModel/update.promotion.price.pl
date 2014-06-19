@@ -96,7 +96,7 @@ use Mojo::UserAgent;
 use Encode;
 my $ua = Mojo::UserAgent->new;
 
-my $request_count = 0;
+my $update_price_sql = q();
 while(my($set_key,$commodity_list) = each %commodity_set_hash){
     my($set_id,$promotion_code) = split(/\s/,$set_key);
     my %data_list = (
@@ -104,13 +104,21 @@ while(my($set_key,$commodity_list) = each %commodity_set_hash){
                      'commodity_list' => $commodity_list
                     );
     my $data_list_str = $json->encode(\%data_list);
-    my $api_url = qq(http://crmapi.dns.ganji.com:7101/CommodityBaseApi/PromotionActivity/VerifyPromotionActivity.cbi?source=6566567b50be0ac7b85076ae76acbaa1&data_list=$data_list_str);
-    my $response_txt = $ua->get($api_url)->res->body;
-    $response_txt = encode('utf8', decode('gbk',$response_txt));
-    say $api_url;
-    if( $request_count++ < 3){
-        say $response_txt;
+    my $api_url = qq(http://crmapi.dns.ganji.com:7101/CommodityBaseApi/PromotionActivity/VerifyPromotionActivity.cbi);
+    my $promotion_result = $ua->post($api_url=>form=>{
+                                                  source => '6566567b50be0ac7b85076ae76acbaa1',
+                                                  data_list => $data_list_str
+                                                 })->res->json();
+
+    # generate update price sql
+    if($promotion_result->{succeed} == 1){
+        foreach(@{$promotion_result->{data}}){
+            my ($update_price,$update_id) = @$_{(qw(public_price uniquely_key))};
+            $update_price_sql .= qq(UPDATE gcrm.`uni_commodity` c SET c.`promotion_public_price` = $update_price WHERE c.`id` = $update_id ;\n);
+        }
     }else{
-        break;
-    };
+     #   carp 'requrest is faild :' . $data_list_str;
+    }
 }
+
+say $update_price_sql;
