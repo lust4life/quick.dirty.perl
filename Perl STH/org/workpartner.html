@@ -1,180 +1,83 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-               "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
+<meta charset="utf-8"/>
 <title>make things easier and more maintainable</title>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
-<meta name="title" content="make things easier and more maintainable"/>
-<meta name="generator" content="Org-mode"/>
-<meta name="generated" content="2014-06-26T15:54+0800"/>
-<meta name="author" content=""/>
-<meta name="description" content=""/>
-<meta name="keywords" content=""/>
-<style type="text/css">
- <!--/*--><![CDATA[/*><!--*/
-  html { font-family: Times, serif; font-size: 12pt; }
-  .title  { text-align: center; }
-  .todo   { color: red; }
-  .done   { color: green; }
-  .tag    { background-color: #add8e6; font-weight:normal }
-  .target { }
-  .timestamp { color: #bebebe; }
-  .timestamp-kwd { color: #5f9ea0; }
-  .right  {margin-left:auto; margin-right:0px;  text-align:right;}
-  .left   {margin-left:0px;  margin-right:auto; text-align:left;}
-  .center {margin-left:auto; margin-right:auto; text-align:center;}
-  p.verse { margin-left: 3% }
-  pre {
-	border: 1pt solid #AEBDCC;
-	background-color: #F3F5F7;
-	padding: 5pt;
-	font-family: courier, monospace;
-        font-size: 90%;
-        overflow:auto;
-  }
-  table { border-collapse: collapse; }
-  td, th { vertical-align: top;  }
-  th.right  { text-align:center;  }
-  th.left   { text-align:center;   }
-  th.center { text-align:center; }
-  td.right  { text-align:right;  }
-  td.left   { text-align:left;   }
-  td.center { text-align:center; }
-  dt { font-weight: bold; }
-  div.figure { padding: 0.5em; }
-  div.figure p { text-align: center; }
-  div.inlinetask {
-    padding:10px;
-    border:2px solid gray;
-    margin:10px;
-    background: #ffffcc;
-  }
-  textarea { overflow-x: auto; }
-  .linenr { font-size:smaller }
-  .code-highlighted {background-color:#ffff00;}
-  .org-info-js_info-navigation { border-style:none; }
-  #org-info-js_console-label { font-size:10px; font-weight:bold;
-                               white-space:nowrap; }
-  .org-info-js_search-highlight {background-color:#ffff00; color:#000000;
-                                 font-weight:bold; }
-  /*]]>*/-->
-</style>
-<script type="text/javascript">
-/*
-@licstart  The following is the entire license notice for the
-JavaScript code in this tag.
 
-Copyright (C) 2012-2013 Free Software Foundation, Inc.
+<link rel="stylesheet" href="./reveal.js/css/reveal.min.css"/>
+<link rel="stylesheet" href="./reveal.js/css/theme/default.css" id="theme"/>
 
-The JavaScript code in this tag is free software: you can
-redistribute it and/or modify it under the terms of the GNU
-General Public License (GNU GPL) as published by the Free Software
-Foundation, either version 3 of the License, or (at your option)
-any later version.  The code is distributed WITHOUT ANY WARRANTY;
-without even the implied warranty of MERCHANTABILITY or FITNESS
-FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
-
-As additional permission under GNU GPL version 3 section 7, you
-may distribute non-source (e.g., minimized or compacted) forms of
-that code without the copy of the GNU GPL normally required by
-section 4, provided you include this license notice and a URL
-through which recipients can access the Corresponding Source.
-
-
-@licend  The above is the entire license notice
-for the JavaScript code in this tag.
-*/
-<!--/*--><![CDATA[/*><!--*/
- function CodeHighlightOn(elem, id)
- {
-   var target = document.getElementById(id);
-   if(null != target) {
-     elem.cacheClassElem = elem.className;
-     elem.cacheClassTarget = target.className;
-     target.className = "code-highlighted";
-     elem.className   = "code-highlighted";
-   }
- }
- function CodeHighlightOff(elem, id)
- {
-   var target = document.getElementById(id);
-   if(elem.cacheClassElem)
-     elem.className = elem.cacheClassElem;
-   if(elem.cacheClassTarget)
-     target.className = elem.cacheClassTarget;
- }
-/*]]>*///-->
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = './reveal.js/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
 </script>
-
 </head>
 <body>
-
-<div id="preamble">
-
-</div>
-
-<div id="content">
-<h1 class="title">make things easier and more maintainable</h1>
-
-
-<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
+<div class="reveal">
+<div class="slides">
+<section>
+<h1>make things easier and more maintainable</h1>
+<h2></h2>
+<h2><a href="mailto:qianjiajun@BJJS-QIANJJ">qianjiajun@BJJS-QIANJJ</a></h2>
+<h2></h2></section>
+<section>
+<h2>Table of Contents</h2><ul>
+<li>
+<a href="#sec-1">introduce</a>
 <ul>
-<li><a href="#sec-1">1 introduce</a>
+<li>
+<a href="#sec-1-1">how we use javascript as before</a>
 <ul>
-<li><a href="#sec-1-1">1.1 how we use javascript as before</a>
-<ul>
-<li><a href="#sec-1-1-1">1.1.1 use.as.normal.function.js</a></li>
-</ul>
+<li>
+<a href="#sec-1-1-1">use.as.normal.function.js</a>
 </li>
-<li><a href="#sec-1-2">1.2 CommonJS or AMD</a>
+</ul>
+<li>
+<a href="#sec-1-2">CommonJS or AMD</a>
 <ul>
-<li><a href="#sec-1-2-1">1.2.1 use.as.module.js</a></li>
-</ul></li>
-</ul>
+<li>
+<a href="#sec-1-2-1">use.as.module.js</a>
 </li>
-<li><a href="#sec-2">2 how we use amd in our proj</a></li>
-<li><a href="#sec-3">3 what else can we do ?</a></li>
 </ul>
-</div>
-</div>
+<li>
+<a href="#sec-2">how we use amd in our proj</a>
+</li>
+<li>
+<a href="#sec-3">what else can we do ?</a>
+</li>
+</ul>
+</section>
 
-<div id="outline-container-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> introduce</h2>
-<div class="outline-text-2" id="text-1">
+<section>
+<section id="sec-1" >
 
+<h2><span class="section-number-2">1</span> introduce</h2>
+</section>
+<section id="sec-1-1" >
 
-</div>
+<h3><span class="section-number-3">1.1</span> how we use javascript as before</h3>
+</section>
+<section id="sec-1-1-1" >
 
-<div id="outline-container-1-1" class="outline-3">
-<h3 id="sec-1-1"><span class="section-number-3">1.1</span> how we use javascript as before</h3>
-<div class="outline-text-3" id="text-1-1">
+<h4><span class="section-number-4">1.1.1</span> use.as.normal.function.js</h4>
+<div class="org-src-container">
 
-
-</div>
-
-<div id="outline-container-1-1-1" class="outline-4">
-<h4 id="sec-1-1-1"><span class="section-number-4">1.1.1</span> use.as.normal.function.js</h4>
-<div class="outline-text-4" id="text-1-1-1">
-
-
-
-
-
-<pre class="src src-js">&lt;script src=<span style="color: #2aa198;">"~/Scripts/Jquery/jquery-1.8.0.min.js"</span>&gt;&lt;/script&gt;
+<pre  class="src src-js">&lt;script src=<span style="color: #2aa198;">"~/Scripts/Jquery/jquery-1.8.0.min.js"</span>&gt;&lt;/script&gt;
 
 $(<span style="color: #859900;">function</span> () {
   <span style="color: #586e75; font-style: italic;">// </span><span style="color: #586e75; font-style: italic;">do something after dom ready</span>
 });
-
 </pre>
+</div>
 
-
-<ul>
-<li id="sec-1-1-1-1">drawback<br/>
-<ul>
+<ol class="org-ol"><li class="fragment none">drawback<br/><ul class="org-ul">
 <li>依赖不明显
 </li>
 <li>重复加载
@@ -182,76 +85,57 @@ $(<span style="color: #859900;">function</span> () {
 <li>污染全局变量
 </li>
 </ul>
-
-
 </li>
-</ul>
-<ul>
-<li id="sec-1-1-1-2">what can we do ? use as module !<br/>
-<ul>
+
+<li class="fragment none">what can we do ? use as module !<br/><ul class="org-ul">
 <li>Why
-<ul>
-<li>解耦,职责单一,高内聚&hellip;
+<ul class="org-ul">
+<li>解耦,职责单一,高内聚&#x2026;
 </li>
 <li>模块本身可控,更容易解决依赖(新增,删除..)
 </li>
 <li>平滑过渡
 </li>
 </ul>
-
 </li>
 <li>How
-      原生的javascript本身没有这方面的设计,只能借助框架||规范
-<ul>
+原生的javascript本身没有这方面的设计,只能借助框架||规范
+<ul class="org-ul">
 <li>cmd
 </li>
 <li>amd
 </li>
 </ul>
-
 </li>
 </ul>
+</li></ol>
 
+</section>
+<section id="sec-1-2" >
 
-</li>
-</ul>
-</div>
-</div>
-
-</div>
-
-<div id="outline-container-1-2" class="outline-3">
-<h3 id="sec-1-2"><span class="section-number-3">1.2</span> CommonJS or AMD</h3>
-<div class="outline-text-3" id="text-1-2">
-
-<ul>
+<h3><span class="section-number-3">1.2</span> CommonJS or AMD</h3>
+<ul class="org-ul">
 <li>都是为了模块化开发
 </li>
 <li>AMD A means Asynchronous
-     loaded as they are needed
-     更适用于 cs (in-borwser)开发
+loaded as they are needed
+更适用于 cs (in-borwser)开发
 </li>
 <li>CommonJs
-     loading all modules up front
-     更适用于 server-side (node.js..)
+loading all modules up front
+更适用于 server-side (node.js..)
 </li>
 <li>为了推广,其实双方都可以同步也可以异步.侧重点不同.
 </li>
 </ul>
 
+</section>
+<section id="sec-1-2-1" >
 
+<h4><span class="section-number-4">1.2.1</span> use.as.module.js</h4>
+<div class="org-src-container">
 
-</div>
-
-<div id="outline-container-1-2-1" class="outline-4">
-<h4 id="sec-1-2-1"><span class="section-number-4">1.2.1</span> use.as.module.js</h4>
-<div class="outline-text-4" id="text-1-2-1">
-
-
-
-
-
-<pre class="src src-js"><span style="color: #586e75; font-style: italic;">/*</span>
+<pre  class="src src-js"><span style="color: #586e75; font-style: italic;">/*</span>
 <span style="color: #586e75; font-style: italic;">  commonjs</span>
 <span style="color: #586e75; font-style: italic;">*/</span>
 <span style="color: #586e75; font-style: italic;">// </span><span style="color: #586e75; font-style: italic;">package/lib is a dependency we require</span>
@@ -285,38 +169,33 @@ define([<span style="color: #2aa198;">"package/lib"</span>], <span style="color:
 require([<span style="color: #2aa198;">"package/myModule"</span>], <span style="color: #859900;">function</span>(<span style="color: #b58900;">myModule</span>) {
     myModule.foobar();
 });
-
 </pre>
-
-
 </div>
-</div>
-</div>
+</section>
 
-</div>
+</section>
+<section>
+<section id="sec-2" >
 
-<div id="outline-container-2" class="outline-2">
-<h2 id="sec-2"><span class="section-number-2">2</span> how we use amd in our proj</h2>
-<div class="outline-text-2" id="text-2">
+<h2><span class="section-number-2">2</span> how we use amd in our proj</h2>
+<img src="requirejs.cart.jpg" alt="requirejs.cart.jpg" />
+</section>
 
-<p>  <img src="requirejs.cart.jpg"  alt="requirejs.cart.jpg" />
+</section>
+<section>
+<section id="sec-3" >
+
+<h2><span class="section-number-2">3</span> what else can we do ?</h2>
+<p>
+use it whth knockout.js (js MVVM Framework)<br  />
+  see a sample<br  />
+  <img src="shopping.view.jpg" alt="shopping.view.jpg" />
 </p>
-</div>
 
-</div>
-
-<div id="outline-container-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> what else can we do ?</h2>
-<div class="outline-text-2" id="text-3">
-
-<p>  use it whth knockout.js (js MVVM Framework)<br/>
-  see a sample<br/>
-  <img src="shopping.view.jpg"  alt="shopping.view.jpg" />
-</p>
-<ul>
+<ul class="org-ul">
 <li>模块化页面
-    分离为各个小型 widget
-<ul>
+分离为各个小型 widget
+<ul class="org-ul">
 <li>便于一定程度的重用,便于管理维护
 </li>
 <li>问题: 如何进行widget间的交互?
@@ -324,21 +203,19 @@ require([<span style="color: #2aa198;">"package/myModule"</span>], <span style="
 <li>通过事件通知机制,避免直接相互依赖,相互耦合
 </li>
 </ul>
-
 </li>
 <li>既然模块化了js widget，如何实现 view 和 js 分离
-<ul>
+<ul class="org-ul">
 <li>分离以后，数据通讯怎么做? no razor !
 </li>
-<li>服务端的数据 (ajax request url&hellip;) 如何传递给 js 文件?
+<li>服务端的数据 (ajax request url&#x2026;) 如何传递给 js 文件?
 </li>
 <li>全局变量存储 js 变量,进行传递
 </li>
 </ul>
-
 </li>
 <li>code smell
-<ul>
+<ul class="org-ul">
 <li>尽可能少的用 razor 对 html 结构进行控制.
 </li>
 <li>尽可能使用js模板引擎进行控制,使前端更前端,更能less is more的高效处理
@@ -348,23 +225,48 @@ require([<span style="color: #2aa198;">"package/myModule"</span>], <span style="
 <li>尽可能在html中使用声明式编程,在后端用程序赋予每个声明具体的意义(因为html设计的本意就不是为了展现动态页面.html5?)
 </li>
 </ul>
-
 </li>
 </ul>
 
-
 <p>
-  see a demo =&gt; <a href="http://uniorder.test.corp.ganji.com/shop/apply?ContractId=22362&amp;contractSourceType=1">http://uniorder.test.corp.ganji.com/shop/apply?ContractId=22362&amp;contractSourceType=1</a>
-</p></div>
+see a demo =&gt; <a href="http://uniorder.test.corp.ganji.com/shop/apply?ContractId=22362&contractSourceType=1">http://uniorder.test.corp.ganji.com/shop/apply?ContractId=22362&contractSourceType=1</a>
+</p>
+</section>
+</section>
 </div>
 </div>
 
-<div id="postamble">
-<p class="date">Date: 2014-06-26T15:54+0800</p>
-<p class="author">Author: </p>
-<p class="creator"><a href="http://orgmode.org">Org</a> version 7.9.3f with <a href="http://www.gnu.org/software/emacs/">Emacs</a> version 24</p>
-<a href="http://validator.w3.org/check?uri=referer">Validate XHTML 1.0</a>
+<script src="./reveal.js/lib/js/head.min.js"></script>
+<script src="./reveal.js/js/reveal.min.js"></script>
 
-</div>
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: true,
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'default', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'default',
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: './reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: './reveal.js/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './reveal.js/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: './reveal.js/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+ { src: './reveal.js/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: './reveal.js/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+]
+});
+</script>
 </body>
 </html>

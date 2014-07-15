@@ -13,7 +13,7 @@ my $response = LWP::UserAgent->new()->post(
     'http://192.168.72.254/portal/logon.cgi',
     [
         PtUser   => 'qianjiajun',
-        PtPwd    => 'suyang4`',
+        PtPwd    => 'suyang5`',
         Domain   => '@ganji.com',
         PtButton => 'Logon'
     ]

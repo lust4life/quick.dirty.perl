@@ -86,7 +86,6 @@
   use it whth knockout.js (js MVVM Framework)\\
   see a sample\\
   [[file:shopping.view.jpg]]
-
   * 模块化页面
     分离为各个小型 widget
     - 便于一定程度的重用,便于管理维护
@@ -98,8 +97,11 @@
     - 全局变量存储 js 变量,进行传递
   * code smell
     - 尽可能少的用 razor 对 html 结构进行控制.
-    - 尽可能使用js模板引擎进行控制,使前端更前端,更能less is more的高效处理
+    - 尽可能使用js模板引擎进行控制,
+      使前端更前端,更能less is more的高效处理
     - 尽可能少的使用 $ 对dom进行动态变更,使用 mvvm 的双向绑定进行控制
-    - 尽可能在html中使用声明式编程,在后端用程序赋予每个声明具体的意义(因为html设计的本意就不是为了展现动态页面.html5?)
+    - 尽可能在html中使用声明式编程,
+      在后端用程序赋予每个声明具体的意义
+      (因为html设计的本意就不是为了展现动态页面.html5?)
 
   see a demo => http://uniorder.test.corp.ganji.com/shop/apply?ContractId=22362&contractSourceType=1

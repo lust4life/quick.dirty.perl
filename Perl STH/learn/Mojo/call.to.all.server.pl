@@ -19,7 +19,11 @@ foreach my $server_info(@$server_infos){
 #  my $request_url = $url_port . '/adcache/rebuildcache?donotevil=1401811201';
   my $request_url = $url_port . '/StoreService/Contract/RefreshCommodity.json';
 
-  my $request_result = $ua->get($request_url)->res->body;
+  my $request_result = undef;
+  if($ua->get($request_url)->res->body =~ m/1010151000096/){
+	$request_result = $&;
+  }
+  
   $server_infos_hash{$url_port} = {
                                    'request_url' => $request_url,
                                    'request_result' => $request_result
