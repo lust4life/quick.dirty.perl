@@ -18,8 +18,8 @@ my $all_customer_sql = q{SELECT
 c.`CompanyName` AS 'company_name',
 c.`FullName` AS 'customer_name',
 ca.`UserId` AS 'user_id',
-c.`EmployeeName` AS 'employee',
-c.`MaintainName` AS 'maintain'
+ca.`SaleName` AS 'sale_name',
+ca.`ServiceName` AS 'service_name'
  FROM gcrm.`customer` c
 JOIN gcrm.`customer_account` ca
 ON c.`CustomerId` = ca.`CustomerId`
@@ -30,7 +30,7 @@ c.`CompanyId` IN (
 AND c.`Status` = 0 AND ca.`Status` = 1
 };
 
-my $user_in_use_sql = q{SELECT
+my $user_in_use_sql_tpl = q{SELECT
  distinct b.`user_id`
 FROM
   `biz_balance_user_%s` b
@@ -73,14 +73,11 @@ sub group_user_id{
 my @all_user_id_in_use = ();
 while(my($table_index,$user_ids_ref) = each %user_id_group){
     if($user_ids_ref && (scalar(@$user_ids_ref) > 0)){
-        $user_in_use_sql = sprintf($user_in_use_sql,$table_index,join(',',@$user_ids_ref));
-
+        my $user_in_use_sql = sprintf($user_in_use_sql_tpl,$table_index,join(',',@$user_ids_ref));
         my $all_user_id_in_use_ref = $tc_db->selectall_arrayref($user_in_use_sql);
         push(@all_user_id_in_use, map {@$_} @$all_user_id_in_use_ref);
     }
 }
-
-
 
 use Mojo::UserAgent;
 use Encode;
@@ -105,7 +102,7 @@ foreach my $row(@{$customer_info_hash_ref}{@all_user_id_in_use}){
     my $user_info = decode('utf8',$ua->post($get_user_id_url)->res->body);
     if($user_info =~ /Email:(.*?)\s.*Name:(.*?)\s/){
         @$row{'user_email','user_name'} = ($1,$2);
-        $all_customer_info_export .= sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",@$row{qw(company_name customer_name employee maintain user_id user_email user_name)});
+        $all_customer_info_export .= sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",@$row{qw(company_name customer_name sale_name service_name user_id user_email user_name)});
     }
     else{
         carp 'requrest is faild :' . $user_id;
