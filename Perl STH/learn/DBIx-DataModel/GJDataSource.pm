@@ -13,7 +13,7 @@ use constant {
   User => 'qianjiajun',
     Pwd  => 'fd497162d',
       TestIP => '10.3.255.21',
-        RealIP => '192.168.116.20',
+        RealIP => '10.1.3.18',
   };
 
 sub new{

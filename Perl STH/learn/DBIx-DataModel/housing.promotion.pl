@@ -17,6 +17,7 @@ my $json = JSON->new->allow_nonref;
 my $all_customer_sql = q{SELECT
 c.`CompanyName` AS 'company_name',
 c.`FullName` AS 'customer_name',
+ca.`AccountId` AS 'account_id',
 ca.`UserId` AS 'user_id',
 ca.`SaleName` AS 'sale_name',
 ca.`ServiceName` AS 'service_name'
@@ -25,7 +26,7 @@ JOIN gcrm.`customer_account` ca
 ON c.`CustomerId` = ca.`CustomerId`
 WHERE
 c.`CompanyId` IN (
-28904,90839,66236,194033,1941,168236,13902,175932,820,1131,3100,214271,72875,16500,3339,2948,18279,148561,1900,954,2377,1191,176246,19234,119083,2910,22105,15718,24119,10760,858,786,23355,3726,23073,114889,181612,1531,72656,93239,2489,908,220157,1520,2487,11158,21084,21938
+28904,90839,66236,194033,1941,168236,13902,175932,820,1131,3100,214271,72875,16500,3339,2948,18279,148561,1900,954,2377,1191,176246,19234,119083,2910,22105,15718,24119,10760,858,786,23355,3726,23073,114889,181612,1531,72656,93239,2489,908,220157,1520,2487,11158,21084,21938,27526,3584,12492 
 )
 AND c.`Status` = 0 AND ca.`Status` = 1
 };
@@ -102,7 +103,7 @@ foreach my $row(@{$customer_info_hash_ref}{@all_user_id_in_use}){
     my $user_info = decode('utf8',$ua->post($get_user_id_url)->res->body);
     if($user_info =~ /Email:(.*?)\s.*Name:(.*?)\s/){
         @$row{'user_email','user_name'} = ($1,$2);
-        $all_customer_info_export .= sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\n",@$row{qw(company_name customer_name sale_name service_name user_id user_email user_name)});
+        $all_customer_info_export .= sprintf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",@$row{qw(company_name customer_name sale_name service_name account_id user_id user_email user_name)});
     }
     else{
         carp 'requrest is faild :' . $user_id;
