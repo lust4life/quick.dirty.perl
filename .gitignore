@@ -16,4 +16,5 @@ nytprof.out
 pm_to_blib
 *.sql
 *.txt
- 
+
+*.xls
