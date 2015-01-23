@@ -28,11 +28,11 @@ use Spreadsheet::ParseExcel::FmtUnicode;
 
 sub CacheInfo 
 {
-	my $host = "192.168.64.4";
-	my $database = "gcrm";
-	my $user = "dbdev";
-	my $pw = "ganjidev";
-	my $port = "3306";
+	my $host = "xxxx";
+	my $database = "xxxx";
+	my $user = "xxxx";
+	my $pw = "xxxx";
+	my $port = "xxxx";
 	my $dsn = "DBI:mysql:database=$database;host=$host;port=$port"; #Data Source Name
 	my $dbh = DBI->connect($dsn,$user,$pw,{mysql_enable_utf8 => 1})
 				or die "unable to connect !!" ; # database handle

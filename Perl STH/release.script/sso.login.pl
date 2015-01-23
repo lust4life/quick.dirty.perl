@@ -12,10 +12,10 @@ say "\n" . '-' x 10 . ' well ' x 3 . '-' x 10 . "\n";
 my $response = LWP::UserAgent->new()->post(
     'http://192.168.72.254/portal/logon.cgi',
     [
-        PtUser   => 'qianjiajun',
-        PtPwd    => 'suyang5`',
-        Domain   => '@ganji.com',
-        PtButton => 'Logon'
+        PtUser   => '',
+        PtPwd    => '',
+        Domain   => '',
+        PtButton => ''
     ]
 );
 my $result = decode( 'utf8', $response->content() );

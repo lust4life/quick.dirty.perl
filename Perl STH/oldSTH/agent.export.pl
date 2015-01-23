@@ -28,11 +28,9 @@ say qq();
 say $lets_begin;
 say qq();
 
-# test connect
-# my ( $host, $database, $user, $pw, $port ) = ( qq(192.168.112.10), qq(gcrm), qq(qianjiajun), qq(fd497162d), qq(3320) );
 
 # online connect
-my ( $host, $database, $user, $pw, $port ) = ( qq(192.168.116.20), qq(gcrm), qq(qianjiajun), qq(fd497162d), qq(3320) );
+my ( $host, $database, $user, $pw, $port ) = (); # sth you need have define
 
 my $dsn = qq(DBI:mysql:database=$database;host=$host;port=$port);
 my $dbh = DBI->connect( $dsn, $user, $pw, { mysql_enable_utf8 => 1 } )
@@ -75,11 +73,11 @@ printf( "time generate sql file used  : %.4f s\n", $time_used );
 say qq();
 
 sub cache_info {
-    my $host     = qq(192.168.64.4);
-    my $database = qq(gcrm);
-    my $user     = qq(dbdev);
-    my $pw       = qq(ganjidev);
-    my $port     = qq(3306);
+    my $host     = qq(xxxx);
+    my $database = qq(xxxx);
+    my $user     = qq(xxxx);
+    my $pw       = qq(xxxx);
+    my $port     = qq(xxxx);
     my $dsn =
       qq(DBI:mysql:database=$database;host=$host;port=$port);  #data source name
     my $dbh = DBI->connect( $dsn, $user, $pw, { mysql_enable_utf8 => 1 } )

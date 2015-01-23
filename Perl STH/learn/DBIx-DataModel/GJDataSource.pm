@@ -10,10 +10,10 @@ use parent qw/Exporter/;
 our $VERSION = 1.0;
 
 use constant {
-  User => 'qianjiajun',
-    Pwd  => 'fd497162d',
-      TestIP => '10.3.255.21',
-        RealIP => '10.1.3.18',
+  User => '',
+    Pwd  => '',
+      TestIP => '',
+        RealIP => '',
   };
 
 sub new{

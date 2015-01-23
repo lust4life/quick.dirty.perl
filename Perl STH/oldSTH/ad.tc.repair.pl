@@ -17,7 +17,7 @@ my $real_ip = q(192.168.116.20);
 my $use_ip = $is_ip_real =~ /^real$/i ? $real_ip : $test_ip;
 
 # online connect
-my ( $host, $database, $user, $pw, $port ) = ($use_ip, qq(gcrm), qq(qianjiajun), qq(fd497162d), qq(3320) );
+my ( $host, $database, $user, $pw, $port ) =;
 
 my $dsn = qq(DBI:mysql:database=$database;host=$host;port=$port);
 my $dbh = DBI->connect( $dsn, $user, $pw, { mysql_enable_utf8 => 1 } )

@@ -91,7 +91,7 @@ my $tx = $ua->post(
     $sso_url,
     => { DNT => 1 } => json => {
         UserName => 'qianjiajun',
-        Password => 'suyang5`',
+        Password => 'xxxxxxxxxx',
         Domain   => '@ganji.com',
     }
 );

@@ -30,7 +30,7 @@ my $tx = $ua->post(
     $sso_url,
     => { DNT => 1 } => json => {
         UserName => 'qianjiajun',
-        Password => $is_real ? 'suyang2`' : 'suyang',
+        Password => $is_real ? 'xxxxxxxxx' : 'xxxxxxxx',
         Domain   => '@ganji.com',
     }
 );
