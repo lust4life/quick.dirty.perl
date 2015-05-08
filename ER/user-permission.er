@@ -1,0 +1,74 @@
+# 域账户信息 [ad something]
+[domain_info]
+account
+pwd
+etc
+
+# 这是公司员工,内部雇佣关系. 存在部门等级架构,域等信息
+[employee]
+id
+name
+email
+phone
+address
+etc
+
+# 公司的部门组织架构信息,树形层级关系
+[department]
+id
+title
+descrption
+parent_id
+
+
+# 员工 部门 mapping
+[employee_department]
+user_id
+department_id
+
+
+# 所有的系统使用者都有一个唯一的 User 身份,作为在我们系统里的唯一标识.(不论这个用户是各个子系统,还是第三方用户,都需要对应建立我们的唯一用户)
+[user]
+id
+name
+pwd_hash
+security_stamp
+
+[permission]
+id
+description
+code
+
+[roles]
+id
+name
+
+# 用户 角色 mapping 表
+[user_roles]
+user_id
+role_id
+
+# 三方用户登录来源, 第三方系统登陆信息,需要和sso统一用户(user)做绑定.用户可以解除绑定等.
+# provider_key ==> open_id
+[user_logins]
+user_id
+provider_type
+provider
+provider_key
+
+# claim-based info 用户的基本信息,和授权相关的信息 e.g. email username roles ...
+[user_claims]
+id
+user_id
+claim_type
+claim_value
+
+
+employee 1--1 domain_info
+employee 1--+ employee_department
+department 1--+ employee_department
+
+
+# domain_info 可以考虑与 employee 合并,或者 employee 信息直接使用域账户相关信息
+# sso 返回认证 token , 再用 token[identity provider] 去请求 access control service 获取 claims
+# claim 的数据添加要考虑好,什么数据是 identity 的核心, 什么数据是授权依赖的,什么数据是 IP 系统管理比自己处理好,什么数据具有公共使用性质...
