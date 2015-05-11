@@ -1,9 +1,3 @@
-# 域账户信息 [ad something]
-[domain_info]
-account
-pwd
-etc
-
 # 这是公司员工,内部雇佣关系. 存在部门等级架构,域等信息
 [employee]
 id
@@ -30,14 +24,19 @@ department_id
 # 所有的系统使用者都有一个唯一的 User 身份,作为在我们系统里的唯一标识.(不论这个用户是各个子系统,还是第三方用户,都需要对应建立我们的唯一用户)
 [user]
 id
+employee_id
 name
 pwd_hash
 security_stamp
+email
+email_confirmed
+phone_number
+phone_number_confirmed
+two_factor_enabled
+lockout_end_date
+access_failed_count
 
-[permission]
-id
-description
-code
+
 
 [roles]
 id
@@ -48,7 +47,7 @@ name
 user_id
 role_id
 
-# 三方用户登录来源, 第三方系统登陆信息,需要和sso统一用户(user)做绑定.用户可以解除绑定等.
+# 用户登录来源,需要和sso统一用户(user)做绑定.用户可以解除绑定等.
 # provider_key ==> open_id
 [user_logins]
 user_id
@@ -63,12 +62,37 @@ user_id
 claim_type
 claim_value
 
+[permission]
+id
+description
+code
+parent_id
+application_code
 
-employee 1--1 domain_info
+
+# target_type 对象(用户,角色)
+[permission_mapping]
+id
+target_type
+target_id
+permission_id
+
+
+
+# employee & department
 employee 1--+ employee_department
 department 1--+ employee_department
+employee 1--1 user
 
+# user and roles
+user 1--* user_roles
+roles 1--* user_roles
+user 1--* user_logins
 
-# domain_info 可以考虑与 employee 合并,或者 employee 信息直接使用域账户相关信息
+# permission and roles
+roles 1--* permission_mapping
+user  1--* permission_mapping
+permission 1--* permission_mapping
+
 # sso 返回认证 token , 再用 token[identity provider] 去请求 access control service 获取 claims
 # claim 的数据添加要考虑好,什么数据是 identity 的核心, 什么数据是授权依赖的,什么数据是 IP 系统管理比自己处理好,什么数据具有公共使用性质...
