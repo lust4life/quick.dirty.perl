@@ -12,7 +12,7 @@ use Path::Tiny;
 use DateTime;
 use Encode;
 use utf8;
-
+use Timer::Simple;
 
 binmode(STDOUT,":encoding(gbk)");
 
@@ -20,7 +20,7 @@ my $site_root_dir = path('e:/git/lust4life/src/org/life/');
 
 my $ua = Mojo::UserAgent->new;
 
-my $g_tk = q(1624749764);
+my $g_tk = q(793542699);
 
 
 my $query_url_fomat = q(http://taotao.qq.com/cgi-bin/emotion_cgi_msglist_v6?pos=%d&num=%d&code_version=1&format=json&g_tk=%s);
@@ -121,14 +121,32 @@ end_org
     $site_root_dir->path($file_name . '.org')->touch->spew_utf8($org_content);
 }
 
+my $time_used = Timer::Simple->new();
+
 Mojo::IOLoop->delay(
                     sub{
                         my ($delay) = shift;
                         my $page_num = 40;
-                        for my $page(0..1){
+                        for my $page(0..15){
                             my $start_index = $page * $page_num;
                             my $query_url = sprintf($query_url_fomat,$start_index,$page_num,$g_tk);
-                            $ua->get($query_url => $delay->begin );
+                            $ua->cookie_jar->add(
+                                                 Mojo::Cookie::Response->new(
+                                                                             name   => 'skey',
+                                                                             value  => '@DGwKszHQ3',
+                                                                             domain => '.qq.com',
+                                                                             path   => '/'
+                                                                            )
+                                                );
+                            $ua->cookie_jar->add(
+                                                 Mojo::Cookie::Response->new(
+                                                                             name   => 'uin',
+                                                                             value  => 'o0276805281',
+                                                                             domain => '.qq.com',
+                                                                             path   => '/'
+                                                                            )
+                                                );
+                            $ua->get($query_url => $delay->begin);
                         }
                     },
                     sub{
@@ -141,5 +159,8 @@ Mojo::IOLoop->delay(
 
                         # 将 msg_infos 处理成 org file 进行保存
                         map {generate_org_file($_)} @msg_infos;
+                        say "\n\ndone!\n";
                     }
                    )->wait;
+
+say "all took: $time_used";
