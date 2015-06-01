@@ -8,9 +8,12 @@ use Win32::Clipboard;
 use autodie;
 use Imager;
 use Getopt::Long;
+use Path::Tiny;
 
 my $fileName;
 (GetOptions('file|f=s' => \$fileName) && $fileName) or die "Usage: $0 --file|-f Name";
+
+path($fileName)->touchpath;
 
 my $clip = Win32::Clipboard();
 if($clip->IsBitmap()){
