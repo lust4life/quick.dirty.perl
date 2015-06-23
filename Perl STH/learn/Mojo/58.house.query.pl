@@ -11,35 +11,42 @@ use Encode;
 use Path::Tiny;
 use DateTime;
 use Mojo::JSON qw(encode_json decode_json);
-
-my $page = path('C:\Users\jiajun\Desktop\test.html');
-
-my $mojo_dom = Mojo::DOM->new($page->slurp_utf8);
+use Timer::Simple;
+use Try::Tiny;
 
 
+#my $page = path('C:\Users\jiajun\Desktop\test.html');
+#my $mojo_dom = Mojo::DOM->new($page->slurp_utf8);
 
+my $cwd = Path::Tiny->cwd;
 my $ua = Mojo::UserAgent->new;
 
+
+my $time_used = Timer::Simple->new();
+
 my $detail_page_urls = generate_detail_page_urls('http://cd.58.com/chuzu/pn1/');
+p $detail_page_urls;
 my @page_infos = map {
     my $puid = $_;
     my $detail_page_url = $detail_page_urls->{$puid};
     my $detail_page_dom = $ua->get($detail_page_url)->res->dom;
-    my $page_info = grap_detail_page($detail_page_dom,$puid);
+    my $page_info = {puid => $puid};
+    try{
+        $page_info = grap_detail_page($detail_page_dom,$puid);
+    }catch{
+#        carp "$detail_page_url  $_";
+    };
     $page_info;
 } keys %$detail_page_urls;
 
+my $page_info_json = encode_json(\@page_infos);
+$cwd->path("/result.json")->spew($page_info_json);
 
-my $page_info_json = encode_json(@page_infos);
-path("c:/users/jiajun/desktop/result.txt")->spew_utf8($page_info_json);
-say "\ndone!";
-
+say "\ndone!time used: $time_used";
 
 sub grap_detail_page{
     my ($page_dom,$puid) = @_;
-
-    $page_dom = $page_dom->at("div#main");
-
+    carp "$puid page_dom is null" if !$page_dom;
     my $title = $page_dom->at("div.bigtitle")->all_text;
     my $date = $page_dom->at("li.time")->text || DateTime->today()->ymd;
     my $summary = $page_dom->find("ul.suUl>li");
@@ -63,7 +70,6 @@ sub grap_detail_page{
                      address =>$address,
                      peizhi =>$peizhi ,
                     };
-
     return $page_info;
 }
 
@@ -73,14 +79,16 @@ sub generate_detail_page_urls{
 #    my $page_list_dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
 
     my %detail_page_urls;
-    $page_list_dom->find("div#infolist tr[logr]")
-            ->map(attr=>'logr')
+    $page_list_dom->find("div#infolist tr[logr] h1>a[href]")
+            ->map(attr=>'href')
             ->each(sub{
                        my ($e,$num) = @_;
-                       if ($e =~ m/(\d+)_\d_\d/){
+                       if ($e =~ m</(\d+)x\.shtml>){
                            my $puid = $1;
-                           my $url = 'http://cd.58.com/hezu/' . $1 . 'x.shtml';
+                           my $url = $e;
                            $detail_page_urls{$puid} = $url;
+                       }else{
+                           # say $e;
                        }
                    });
 
