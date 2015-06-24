@@ -20,58 +20,15 @@ use Try::Tiny;
 
 my $cwd = Path::Tiny->cwd;
 my $ua = Mojo::UserAgent->new;
-$ua    = $ua->connect_timeout(1)->request_timeout(1);
+$ua    = $ua->connect_timeout(1)->request_timeout(5);
 
-my $time_used = Timer::Simple->new();
-
-my $detail_page_urls = generate_detail_page_urls('http://cd.58.com/chuzu/pn1/');
-
-my @page_infos ;
-my %error_query;
-foreach my $puid(keys %$detail_page_urls){
-    my $page_info = {puid => $puid};
-
-    if ($puid eq 'special-url') {
-        my @special_url_page_infos = map {
-            my $url = $_;
-            my $time = Timer::Simple->new();
-            my $detail_page_dom =$ua->max_redirects(2)->get($url)->res->dom;
-            say "request: $time";
-            try{
-                $page_info = grap_detail_page($detail_page_dom,$puid);
-            }catch{
-                $error_query{$url} = $_;
-#                carp "error happened: $url  $_ :";
-            };
-
-        }  @{$detail_page_urls->{'special-url'}};
-
-        push @page_infos,@special_url_page_infos;
-    } else {
-        my $detail_page_url = $detail_page_urls->{$puid};
-        my $time = Timer::Simple->new();
-        my $detail_page_dom = $ua->get($detail_page_url)->res->dom;
-        say "request: $time";
-
-        try{
-            $page_info = grap_detail_page($detail_page_dom,$puid);
-        }catch{
-#            carp "error happened: $detail_page_url  $_";
-            $error_query{$detail_page_url} = $_;
-        };
-        push @page_infos,$page_info;
-    }
-}
-
-my $page_info_json = encode_json(\@page_infos);
-$cwd->path("/result.json")->spew($page_info_json);
-
-say "\ndone!time used: $time_used";
-say p %error_query;
+$ua->on(start => sub {
+  my ($ua, $tx) = @_;
+  $tx->req->headers->user_agent('Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:40.0) Gecko/20100101 Firefox/40.0');
+});
 
 sub grap_detail_page{
-    my ($page_dom,$puid) = @_;
-    carp "$puid page_dom is null" if !$page_dom;
+    my ($page_dom) = @_;
 
     my $title = $page_dom->at("div.bigtitle")->all_text;
     my $date = $page_dom->at("li.time")->text || DateTime->today()->ymd;
@@ -86,7 +43,6 @@ sub grap_detail_page{
     my $peizhi = $1 if $peizhi_dom && (($peizhi_dom->all_text) =~ m/tmp = '(.*)';/);
 
     my $page_info = {
-                     puid => $puid,
                      title => $title,
                      date => $date,
                      price =>$price,
@@ -100,12 +56,11 @@ sub grap_detail_page{
     return $page_info;
 }
 
-sub generate_detail_page_urls{
-    my ($page_url)  = @_;
-    my $page_list_dom = $ua->get($page_url)->res->dom;
+sub generate_detail_page_url_hash_ref{
+    my ($page_list_dom)  = @_;
     #    my $page_list_dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
-
-    my %detail_page_urls;
+    my $detail_url_nums;
+    my %detail_page_url_hash;
     $page_list_dom->find("div#infolist tr[logr] h1>a[href]:nth-child(1)")
             ->map(attr=>'href')
             ->each(sub{
@@ -114,14 +69,84 @@ sub generate_detail_page_urls{
                            return;
                        }
 
+                      ++$detail_url_nums;
+
                        if ($url =~ m</(\d+)x\.shtml>) {
                            my $puid = $1;
-                           $detail_page_urls{$puid} = $url;
+                           $detail_page_url_hash{$puid} = $url;
                        } else {
                            # 这类需要跳转的 url 特殊处理
-                           push @{$detail_page_urls{'special-url'}},$url;
+                           push @{$detail_page_url_hash{'special-url'}},$url;
                        }
                    });
-
-    return \%detail_page_urls;
+    say "has details urls => $detail_url_nums";
+    return \%detail_page_url_hash;
 }
+
+my @page_infos ;
+my %error_query;
+my $error_num ;
+my $url_num ;
+
+my $time_used = Timer::Simple->new();
+
+Mojo::IOLoop->delay(
+                    sub{
+                        my $delay = shift;
+                        for (1..1) {
+                            my $page_list_url = sprintf('http://cd.58.com/chuzu/pn%d/',$_);
+                            $ua->get($page_list_url => $delay->begin);
+                        }
+                    },
+                    sub{
+                        my ($delay,@page_list_results) = @_;
+                        my @page_list_doms = map {$_->res->dom} @page_list_results;
+
+                        for my $page_list_dom (@page_list_doms) {
+                            my $detail_page_url_hash_ref = generate_detail_page_url_hash_ref($page_list_dom);
+
+                            foreach my $puid (keys %$detail_page_url_hash_ref) {
+                                my $page_info = {puid => $puid};
+
+                                if ($puid eq 'special-url') {
+                                    for my $detail_page_url(@{$detail_page_url_hash_ref->{'special-url'}}){
+                                        ++$url_num;
+                                        $ua->max_redirects(2)->get($detail_page_url => $delay->begin);
+                                    }
+                                } else {
+                                    my $detail_page_url = $detail_page_url_hash_ref->{$puid};
+                                    ++$url_num;
+                                    $ua->get($detail_page_url => $delay->begin);
+                                }
+                            }
+                        }
+                    },
+                    sub{
+                        my ($delay,@detail_results) = @_;
+
+                        for my $result(@detail_results){
+                            my $detail_page_dom = $result->res->dom;
+                            my $url = $result->req->url->to_string;
+                            try{
+                                my $page_info = grap_detail_page($detail_page_dom);
+                                $page_info->{'url'} = $url;
+                                push @page_infos,$page_info;
+                            }catch{
+                                $error_query{error_counts} = ++$error_num;
+                                my $error_info = $result->res->error;
+                                $error_info->{'exception'} = $_;
+                                $error_query{$url} = $error_info;
+
+#                                say p $result->res; exit;
+                                #                carp "error happened: $url  $_ :";
+                            };
+                        }
+                    }
+                   )->wait;
+
+my $page_info_json = encode_json(\@page_infos);
+$cwd->path("/result.json")->spew($page_info_json);
+
+say "\ndone!time used: $time_used";
+say p %error_query;
+say "page_info counts => " . scalar(@page_infos) . "\ntotal urls => $url_num";
