@@ -20,12 +20,12 @@ use Try::Tiny;
 
 my $cwd = Path::Tiny->cwd;
 my $ua = Mojo::UserAgent->new;
-$ua    = $ua->connect_timeout(1)->request_timeout(5);
+$ua    = $ua->connect_timeout(1)->request_timeout(2);
 
 $ua->on(start => sub {
-  my ($ua, $tx) = @_;
-  $tx->req->headers->user_agent('Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:40.0) Gecko/20100101 Firefox/40.0');
-});
+            my ($ua, $tx) = @_;
+            $tx->req->headers->user_agent('Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:40.0) Gecko/20100101 Firefox/40.0');
+        });
 
 sub grap_detail_page{
     my ($page_dom) = @_;
@@ -69,7 +69,7 @@ sub generate_detail_page_url_hash_ref{
                            return;
                        }
 
-                      ++$detail_url_nums;
+                       ++$detail_url_nums;
 
                        if ($url =~ m</(\d+)x\.shtml>) {
                            my $puid = $1;
@@ -109,22 +109,31 @@ Mojo::IOLoop->delay(
                                 my $page_info = {puid => $puid};
 
                                 if ($puid eq 'special-url') {
-                                    for my $detail_page_url(@{$detail_page_url_hash_ref->{'special-url'}}){
+                                    for my $detail_page_url (@{$detail_page_url_hash_ref->{'special-url'}}) {
                                         ++$url_num;
-                                        $ua->max_redirects(2)->get($detail_page_url => $delay->begin);
+                                        my $delay_time = $url_num * 0.5;
+                                        Mojo::IOLoop->timer( $delay_time => $delay->pass($detail_page_url));
                                     }
                                 } else {
                                     my $detail_page_url = $detail_page_url_hash_ref->{$puid};
                                     ++$url_num;
-                                    $ua->get($detail_page_url => $delay->begin);
+                                    my $delay_time = $url_num * 0.5;
+                                    Mojo::IOLoop->timer($delay_time => $delay->pass($detail_page_url));
                                 }
                             }
                         }
                     },
                     sub{
+                        my ($delay,@detail_page_urls) = @_;
+                        say $time_used;
+                        exit;
+                        for my $detail_page_url(@detail_page_urls){
+                            $ua->max_redirects(2)->get($detail_page_url => $delay->begin);
+                        }
+                    },
+                    sub{
                         my ($delay,@detail_results) = @_;
-
-                        for my $result(@detail_results){
+                        for my $result (@detail_results) {
                             my $detail_page_dom = $result->res->dom;
                             my $url = $result->req->url->to_string;
                             try{
@@ -137,7 +146,7 @@ Mojo::IOLoop->delay(
                                 $error_info->{'exception'} = $_;
                                 $error_query{$url} = $error_info;
 
-#                                say p $result->res; exit;
+                                #                                say p $result->res; exit;
                                 #                carp "error happened: $url  $_ :";
                             };
                         }
@@ -147,6 +156,6 @@ Mojo::IOLoop->delay(
 my $page_info_json = encode_json(\@page_infos);
 $cwd->path("/result.json")->spew($page_info_json);
 
-say "\ndone!time used: $time_used";
 say p %error_query;
+say "\ndone!time used: $time_used";
 say "page_info counts => " . scalar(@page_infos) . "\ntotal urls => $url_num";
