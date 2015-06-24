@@ -67,6 +67,7 @@ my $page_info_json = encode_json(\@page_infos);
 $cwd->path("/result.json")->spew($page_info_json);
 
 say "\ndone!time used: $time_used";
+say p %error_query;
 
 sub grap_detail_page{
     my ($page_dom,$puid) = @_;
