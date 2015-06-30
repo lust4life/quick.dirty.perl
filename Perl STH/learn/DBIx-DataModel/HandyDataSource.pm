@@ -1,4 +1,4 @@
-package GJ::DataSource;
+package Handy::DataSource;
 
 use strict;
 use warnings;
@@ -10,10 +10,10 @@ use parent qw/Exporter/;
 our $VERSION = 1.0;
 
 use constant {
-  User => '',
-    Pwd  => '',
-      TestIP => '',
-        RealIP => '',
+  User => 'lust',
+    Pwd  => 'lust',
+      TestIP => 'localhost',
+        RealIP => 'localhost',
   };
 
 sub new{
@@ -26,6 +26,7 @@ sub new{
               ms          => qq(DBI:mysql:database=beijing;host=$use_ip;port=3310),
               tc          => qq(DBI:mysql:database=trading_center;host=$use_ip;port=3321),
               mana          => qq(DBI:mysql:database=management;host=$use_ip;port=3311),
+              handy          => qq(DBI:mysql:database=handy;host=$use_ip;port=3306),
              };
   bless($self,$class);
   return $self;
@@ -50,6 +51,10 @@ sub mana {
 
 sub tc {
   return $_[0]->{tc};
+}
+
+sub handy {
+  return $_[0]->{handy};
 }
 
 1;

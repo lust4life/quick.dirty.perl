@@ -13,6 +13,13 @@ use DateTime;
 use Mojo::JSON qw(encode_json decode_json);
 use Timer::Simple;
 use Try::Tiny;
+use DBI;
+use Uti
+
+
+BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/")};
+
+use HandyDataSource;
 
 # push to @INC
 #use UOKO::Schema qw();
@@ -87,13 +94,35 @@ sub generate_detail_page_urls_ref{
     return $page_urls_ref;
 }
 
+my $ds = Handy::DataSource->new(0);
+
+my $handy_db = DBI->connect( $ds->handy,
+                             Handy::DataSource::User,
+                             Handy::DataSource::Pwd,
+                             {
+                              'mysql_enable_utf8' => 1,
+                              'RaiseError' => 1
+                             }
+                           ) or die qq(unable to connect $Handy::DataSource::handy\n);
 
 sub get_urls_in_db{
     my ($page_urls) = @_;
     my @puids_from_web = keys %$page_urls;
+    my $query_sql = q{
+SELECT
+  i.puid
+FROM
+  grab_site_info i
+WHERE i.puid IN ('%s');
+};
+
+    $query_sql = sprintf($query_sql,join("','",@puids_from_web));
+
+    my @puids_in_db = $handy_db->selectrow_array($query_sql);
+    say p @puids_in_db;
 
 
-
+    exit;
 
 
 }
@@ -124,6 +153,8 @@ sub process_detail_result{
     };
 }
 
+get_urls_in_db({123=>1,789789=>2,'we-are'=>3});
+exit;
 
 Mojo::IOLoop->delay(
                     sub{
@@ -164,31 +195,3 @@ say "page_info counts => " . scalar(@page_infos) . "\ntotal urls => $url_num";
 
 
 __END__
-
-CREATE TABLE `grab_site_info` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `url` varchar(250) NOT NULL,
-  `price` decimal(10,2) NOT NULL,
-  `grab_date` datetime NOT NULL,
-  `address` varchar(50) DEFAULT NULL,
-  `floor` varchar(50) DEFAULT NULL,
-  `room_type` varchar(50) DEFAULT NULL,
-  `room_space` decimal(10,2) DEFAULT NULL,
-  `house_type` varchar(50) DEFAULT NULL,
-  `house_decoration` varchar(50) DEFAULT NULL,
-  `region_district` varchar(50) DEFAULT NULL,
-  `region_street` varchar(50) DEFAULT NULL,
-  `region_xiaoqu` varchar(50) DEFAULT NULL,
-  `peizhi_chuang` int(11) NOT NULL DEFAULT '0',
-  `peizhi_yigui` int(11) NOT NULL DEFAULT '0',
-  `peizhi_shafa` int(11) NOT NULL DEFAULT '0',
-  `peizhi_dianshi` int(11) NOT NULL DEFAULT '0',
-  `peizhi_bingxiang` int(11) NOT NULL DEFAULT '0',
-  `peizhi_xiyiji` int(11) NOT NULL DEFAULT '0',
-  `peizhi_kongtiao` int(11) NOT NULL DEFAULT '0',
-  `peizhi_reshuiqi` int(11) NOT NULL DEFAULT '0',
-  `peizhi_kuandai` int(11) NOT NULL DEFAULT '0',
-  `peizhi_nuanqi` int(11) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_url` (`url`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8
