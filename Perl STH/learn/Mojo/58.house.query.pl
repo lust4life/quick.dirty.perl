@@ -14,6 +14,9 @@ use Mojo::JSON qw(encode_json decode_json);
 use Timer::Simple;
 use Try::Tiny;
 
+# push to @INC
+#use UOKO::Schema qw();
+#my $schema = UOKO::Schema->connect('dbi:SQLite:db/example.db');
 
 #my $page = path('C:\Users\jiajun\Desktop\test.html');
 #my $mojo_dom = Mojo::DOM->new($page->slurp_utf8);
@@ -56,11 +59,11 @@ sub grap_detail_page{
     return $page_info;
 }
 
-sub generate_detail_page_url_hash_ref{
+sub generate_detail_page_urls_ref{
     my ($page_list_dom)  = @_;
     #    my $page_list_dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
 
-    my %detail_page_url_hash;
+    my %detail_page_urls;
     $page_list_dom->find("div#infolist tr[logr] h1>a[href]:nth-child(1)")
             ->map(attr=>'href')
             ->each(sub{
@@ -69,18 +72,31 @@ sub generate_detail_page_url_hash_ref{
                            return;
                        }
 
-                       if ($url =~ m</(\d+)x\.shtml>) {
-                           my $puid = $1;
-                           $detail_page_url_hash{$puid} = $url;
-                       } else {
-                           # 这类需要跳转的 url 特殊处理
-                           push @{$detail_page_url_hash{'special-url'}},$url;
-                       }
+                       # 这里处理一下 url ,获取拼装以后的 url (非需要跳转的推广url)
+                       my $puid = 1;
+
+                       $detail_page_urls{$puid} = $url;
                    });
 
-    return \%detail_page_url_hash;
+    # 筛选出数据库中未被抓取过的 url
+
+
+    my $page_urls_ref = \%detail_page_urls;
+
+
+    return $page_urls_ref;
 }
 
+
+sub get_urls_in_db{
+    my ($page_urls) = @_;
+    my @puids_from_web = keys %$page_urls;
+
+
+
+
+
+}
 
 my @page_infos ;
 my %error_query;
@@ -125,29 +141,15 @@ Mojo::IOLoop->delay(
                         my ($delay,@page_list_doms) = @_;
 
                         for my $page_list_dom (@page_list_doms) {
-                            my $detail_page_url_hash_ref = generate_detail_page_url_hash_ref($page_list_dom);
+                            my $detail_page_urls_ref = generate_detail_page_urls_ref($page_list_dom);
 
-                            foreach my $puid (keys %$detail_page_url_hash_ref) {
-                                my $page_info = {puid => $puid};
+                            foreach my $detail_page_url(@$detail_page_urls_ref) {
 
-                                if ($puid eq 'special-url') {
-                                    for my $detail_page_url (@{$detail_page_url_hash_ref->{'special-url'}}) {
-                                        #                                        my $end = $delay->begin(0);
-                                        ++$url_num;
-                                        my $delay_time = $url_num * 0.3;
-                                        Mojo::IOLoop->timer( $delay_time => sub{
-                                                                 $ua->max_redirects(2)->get($detail_page_url => \&process_detail_result);
-                                                             });
-                                    }
-                                } else {
-                                    my $detail_page_url = $detail_page_url_hash_ref->{$puid};
-                                    my $end = $delay->begin(0);
-                                    ++$url_num;
-                                    my $delay_time = $url_num * 0.3;
-                                    Mojo::IOLoop->timer($delay_time => sub{
-                                                            $ua->max_redirects(2)->get($detail_page_url => \&process_detail_result);
-                                                        });
-                                }
+                                ++$url_num;
+                                my $delay_time = $url_num * 0.2;
+                                Mojo::IOLoop->timer( $delay_time => sub{
+                                                         $ua->max_redirects(2)->get($detail_page_url => \&process_detail_result);
+                                                     });
                             }
                         }
                     }
@@ -159,3 +161,34 @@ $cwd->path("/result.json")->spew($page_info_json);
 say p %error_query;
 say "\ndone!\ntime used: $time_used";
 say "page_info counts => " . scalar(@page_infos) . "\ntotal urls => $url_num";
+
+
+__END__
+
+CREATE TABLE `grab_site_info` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `url` varchar(250) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `grab_date` datetime NOT NULL,
+  `address` varchar(50) DEFAULT NULL,
+  `floor` varchar(50) DEFAULT NULL,
+  `room_type` varchar(50) DEFAULT NULL,
+  `room_space` decimal(10,2) DEFAULT NULL,
+  `house_type` varchar(50) DEFAULT NULL,
+  `house_decoration` varchar(50) DEFAULT NULL,
+  `region_district` varchar(50) DEFAULT NULL,
+  `region_street` varchar(50) DEFAULT NULL,
+  `region_xiaoqu` varchar(50) DEFAULT NULL,
+  `peizhi_chuang` int(11) NOT NULL DEFAULT '0',
+  `peizhi_yigui` int(11) NOT NULL DEFAULT '0',
+  `peizhi_shafa` int(11) NOT NULL DEFAULT '0',
+  `peizhi_dianshi` int(11) NOT NULL DEFAULT '0',
+  `peizhi_bingxiang` int(11) NOT NULL DEFAULT '0',
+  `peizhi_xiyiji` int(11) NOT NULL DEFAULT '0',
+  `peizhi_kongtiao` int(11) NOT NULL DEFAULT '0',
+  `peizhi_reshuiqi` int(11) NOT NULL DEFAULT '0',
+  `peizhi_kuandai` int(11) NOT NULL DEFAULT '0',
+  `peizhi_nuanqi` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_url` (`url`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
