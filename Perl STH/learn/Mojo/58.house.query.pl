@@ -41,12 +41,11 @@ $ua->on(start => sub {
             $tx->req->headers->user_agent('Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:40.0) Gecko/20100101 Firefox/40.0');
         });
 
-
-my $ds = Handy::DataSource->new(1);
+my $ds = Handy::DataSource->new(0);
 #DBI->trace('2|SQL');
 my $handy_db = DBI->connect( $ds->handy,
-                             'uoko-dev',
-                             'dev-uoko',
+                             'lust','lust',
+                             #'uoko-dev','dev-uoko',
                              {
                               'mysql_enable_utf8' => 1,
                               'RaiseError' => 1
@@ -78,8 +77,8 @@ my $time_used = Timer::Simple->new();
 Mojo::IOLoop->delay(
                     sub{
                         my $delay = shift;
-                        for my $area((qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu))){
-                            for my $page(1..1) {
+                        for my $area ((qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu))) {
+                            for my $page (1..70) {
                                 my $page_list_url = sprintf('http://cd.58.com/%s/zufang/pn%d/',$area,$page);
                                 my $end = $delay->begin(0);
 
@@ -95,20 +94,20 @@ Mojo::IOLoop->delay(
                     },
                     sub{
                         my ($delay,@page_list_doms) = @_;
+
                         my $end = $delay->begin(0);
 
                         for my $page_list_dom (@page_list_doms) {
                             my $detail_page_urls_ref = generate_detail_page_urls_ref($page_list_dom);
-                            while(my ($puid,$detail_page_url) = each %$detail_page_urls_ref){
+                            while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
 
                                 ++$url_num;
-                                my $delay_time = $url_num * 0.2;
+                                my $delay_time = $url_num * 0.3;
 
                                 Mojo::IOLoop->timer( $delay_time => sub{
                                                          $ua->max_redirects(2)->get($detail_page_url =>sub{
                                                                                         my ($ua,$result) = @_;
                                                                                         process_detail_result($result,$puid);
-
                                                                                     });
                                                      });
                             }
@@ -117,7 +116,7 @@ Mojo::IOLoop->delay(
                    )->wait;
 
 say p %error_query;
-say "error_num: $error_num:";
+say "error_num: $error_num";
 say "done!\ntime used: $time_used";
 say "total urls => $url_num";
 
@@ -132,14 +131,14 @@ sub grab_detail_page{
     my $page_info = {show_data=>$date};
 
 
-    foreach my $row(@$summary){
+    foreach my $row (@$summary) {
         my $title_dom = $row->at("div.su_tit");
         my $title = $title_dom->text if $title_dom;
 
         given($title){
             when('价格'){
                 my $price = $row->at("div.su_con span:nth-child(1)")->text;
-                $page_info->{price} = $price =~ /\d+/ ? $price : 0;
+                $page_info->{price} = ($price =~ m/\d+/) ? $price : 0;
             }
             when('楼层'){
                 my $floor = $row->at("div.su_con")->text;
@@ -174,20 +173,20 @@ sub grab_detail_page{
 
     my $peizhi_dom = $page_dom->at("div.peizhi");
     my $peizhi = $1 if $peizhi_dom && (($peizhi_dom->all_text) =~ m/tmp = '(.*)';/);
-    my @peizhi_info = split(',',$peizhi);
-
     my $peizhi_bit_mask = 0;
-    $peizhi_bit_mask |= PZ_chuang if any {$_ eq '床'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_yigui if any {$_ eq '衣柜'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_shafa if any {$_ eq '沙发'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_dianshi if any {$_ eq '电视'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_bingxiang if any {$_ eq '冰箱'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_xiyiji if any {$_ eq '洗衣机'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_kongtiao if any {$_ eq '空调'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_reshuiqi if any {$_ eq '热水器'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_kuandai if any {$_ eq '宽带'} @peizhi_info;
-    $peizhi_bit_mask |= PZ_nuanqi if any {$_ eq '暖气'} @peizhi_info;
-
+    if ($peizhi) {
+        my @peizhi_info = split(',',$peizhi);
+        $peizhi_bit_mask |= PZ_chuang if any {$_ eq '床'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_yigui if any {$_ eq '衣柜'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_shafa if any {$_ eq '沙发'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_dianshi if any {$_ eq '电视'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_bingxiang if any {$_ eq '冰箱'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_xiyiji if any {$_ eq '洗衣机'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_kongtiao if any {$_ eq '空调'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_reshuiqi if any {$_ eq '热水器'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_kuandai if any {$_ eq '宽带'} @peizhi_info;
+        $peizhi_bit_mask |= PZ_nuanqi if any {$_ eq '暖气'} @peizhi_info;
+    }
     $page_info->{peizhi_info} = $peizhi_bit_mask;
 
     return $page_info;
@@ -197,8 +196,9 @@ sub generate_detail_page_urls_ref{
     my ($page_list_dom)  = @_;
 
     my %detail_page_urls;
-    $page_list_dom->find("div#infolist tr[logr]")
-            ->each(sub{
+    my $tr_doms = $page_list_dom->find("div#infolist tr[logr]");
+
+    $tr_doms->each(sub{
                        my ($dom) = @_;
                        my $url = $dom->at('h1>a[href]:nth-child(1)')->attr('href');
 
@@ -245,7 +245,7 @@ WHERE i.puid IN ('%s');
     $query_sql = sprintf($query_sql,join("','",@puids_from_web));
     my @puids_in_db = @{$handy_db->selectall_arrayref($query_sql)};
 
-    foreach my $row(@puids_in_db){
+    foreach my $row (@puids_in_db) {
         my ($puid) = @$row;
         delete $page_urls->{$puid};
     }
@@ -256,6 +256,19 @@ sub process_detail_result{
     my ($result,$puid) = @_;
     my $detail_page_dom = $result->res->dom;
     my $url = $result->req->url->to_string;
+
+    if ($url =~ /firewall/) {
+        $error_query{error_counts} = ++$error_num;
+        my $error_info = $result->res->error;
+        $error_info->{'exception'} = '反爬虫，访问过快';
+        $error_query{$url} = $error_info;
+        return;
+    }
+    my $body = decode('utf8',$result->res->body);
+    if($body =~ m/你要找的页面不在这个星球上/){
+        return;
+    }
+
     try{
         my $page_info = grab_detail_page($detail_page_dom);
         $page_info->{'url'} = $url;
@@ -300,22 +313,22 @@ VALUES
 __END__
 
 CREATE TABLE `grab_site_info` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `puid` varchar(50) NOT NULL,
-  `url` varchar(1000) NOT NULL,
-  `price` decimal(10,2) NOT NULL,
-  `show_date` datetime NOT NULL,
-  `address` varchar(50) DEFAULT NULL,
-  `floor` varchar(50) DEFAULT NULL,
-  `room_type` varchar(50) DEFAULT NULL,
-  `room_space` decimal(10,2) DEFAULT NULL,
-  `house_type` varchar(50) DEFAULT NULL,
-  `house_decoration` varchar(50) DEFAULT NULL,
-  `region_district` varchar(50) DEFAULT NULL,
-  `region_street` varchar(50) DEFAULT NULL,
-  `region_xiaoqu` varchar(50) DEFAULT NULL,
-  `peizhi_info` bit(20) NOT NULL DEFAULT b'0',
-  `created_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `idx_puid` (`puid`)
-) ENGINE=InnoDB AUTO_INCREMENT=337 DEFAULT CHARSET=utf8
+                               `id` int(11) NOT NULL AUTO_INCREMENT,
+                               `puid` varchar(50) NOT NULL,
+                               `url` varchar(1000) NOT NULL,
+                               `price` decimal(10,2) NOT NULL,
+                               `show_date` datetime NOT NULL,
+                               `address` varchar(50) DEFAULT NULL,
+                               `floor` varchar(50) DEFAULT NULL,
+                               `room_type` varchar(50) DEFAULT NULL,
+                               `room_space` decimal(10,2) DEFAULT NULL,
+                               `house_type` varchar(50) DEFAULT NULL,
+                               `house_decoration` varchar(50) DEFAULT NULL,
+                               `region_district` varchar(50) DEFAULT NULL,
+                               `region_street` varchar(50) DEFAULT NULL,
+                               `region_xiaoqu` varchar(50) DEFAULT NULL,
+                               `peizhi_info` bit(20) NOT NULL DEFAULT b'0',
+                               `created_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                               PRIMARY KEY (`id`),
+                               UNIQUE KEY `idx_puid` (`puid`)
+                              ) ENGINE=InnoDB AUTO_INCREMENT=337 DEFAULT CHARSET=utf8
