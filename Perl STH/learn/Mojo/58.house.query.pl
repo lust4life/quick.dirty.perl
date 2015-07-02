@@ -86,7 +86,17 @@ Mojo::IOLoop->delay(
                                 Mojo::IOLoop->timer( $delay_time => sub{
                                                          $ua->get($page_list_url => sub{
                                                                       my ($ua,$tx) = @_;
-                                                                      $end->($tx->res->dom);
+                                                                      my $url = $tx->req->url->to_string;
+                                                                      my $is_firewall = ($url =~ m/firewall/);
+                                                                      if ($is_firewall || $tx->res->error) {
+                                                                          $error_query{error_counts} = ++$error_num;
+                                                                          my $error_info = $tx->res->error;
+                                                                          $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+                                                                          $error_query{$url} = $error_info;
+                                                                          $end->();
+                                                                      } else {
+                                                                          $end->($tx->res->dom);
+                                                                      }
                                                                   });
                                                      });
                             }
@@ -155,9 +165,9 @@ sub grab_detail_page{
                 my @house_info = split(/\s/,$row->at("div.su_con")->text);
                 $page_info->{room_type} = join("-",@house_info[0,1,2]);
                 my $room_space = $house_info[3];
-                if($room_space =~ s/(\d+).*/$1/){
+                if ($room_space =~ s/(\d+).*/$1/) {
                     $page_info->{room_space} = $room_space;
-                }else{
+                } else {
                     $page_info->{room_space} = 0;
                 }
 
@@ -273,7 +283,7 @@ sub process_detail_result{
         return;
     }
     my $body = decode('utf8',$result->res->body);
-    if($body =~ m/你要找的页面不在这个星球上/){
+    if ($body =~ m/你要找的页面不在这个星球上/) {
         return;
     }
 
@@ -311,10 +321,12 @@ VALUES
         $sth->execute(@params);
 
     }catch{
-        $error_query{error_counts} = ++$error_num;
-        my $error_info = $result->res->error;
-        $error_info->{'exception'} = $_;
-        $error_query{$url} = $error_info;
+        if ($_ !~ m/Duplicate entry/) {
+            $error_query{error_counts} = ++$error_num;
+            my $error_info = $result->res->error;
+            $error_info->{'exception'} = $_;
+            $error_query{$url} = $error_info;
+        }
     };
 }
 
