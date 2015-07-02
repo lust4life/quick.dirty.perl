@@ -41,11 +41,11 @@ $ua->on(start => sub {
             $tx->req->headers->user_agent('Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:40.0) Gecko/20100101 Firefox/40.0');
         });
 
-my $ds = Handy::DataSource->new(0);
+my $ds = Handy::DataSource->new(1);
 #DBI->trace('2|SQL');
 my $handy_db = DBI->connect( $ds->handy,
-                             'lust','lust',
-                             #'uoko-dev','dev-uoko',
+                             #'lust','lust',
+                             'uoko-dev','dev-uoko',
                              {
                               'mysql_enable_utf8' => 1,
                               'RaiseError' => 1
@@ -54,8 +54,8 @@ my $handy_db = DBI->connect( $ds->handy,
 
 
 my %error_query;
-my $error_num ;
-my $url_num ;
+my $error_num=0;
+my $url_num =0;
 
 #my $dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
 #my $page_info = grab_detail_page($dom);
@@ -78,11 +78,11 @@ Mojo::IOLoop->delay(
                     sub{
                         my $delay = shift;
                         for my $area ((qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu))) {
-                            for my $page (1..70) {
+                            for my $page (1..50) {
                                 my $page_list_url = sprintf('http://cd.58.com/%s/zufang/pn%d/',$area,$page);
                                 my $end = $delay->begin(0);
 
-                                my $delay_time = $page * 0.3;
+                                my $delay_time = $page * 0.4;
                                 Mojo::IOLoop->timer( $delay_time => sub{
                                                          $ua->get($page_list_url => sub{
                                                                       my ($ua,$tx) = @_;
@@ -102,7 +102,7 @@ Mojo::IOLoop->delay(
                             while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
 
                                 ++$url_num;
-                                my $delay_time = $url_num * 0.3;
+                                my $delay_time = $url_num * 0.4;
 
                                 Mojo::IOLoop->timer( $delay_time => sub{
                                                          $ua->max_redirects(2)->get($detail_page_url =>sub{
@@ -115,7 +115,10 @@ Mojo::IOLoop->delay(
                     }
                    )->wait;
 
-say p %error_query;
+
+my $error_json = encode_json(\%error_query);
+$cwd->path("/error.json")->spew($error_json);
+
 say "error_num: $error_num";
 say "done!\ntime used: $time_used";
 say "total urls => $url_num";
@@ -152,8 +155,12 @@ sub grab_detail_page{
                 my @house_info = split(/\s/,$row->at("div.su_con")->text);
                 $page_info->{room_type} = join("-",@house_info[0,1,2]);
                 my $room_space = $house_info[3];
-                $room_space =~ s/(\d+).*/$1/;
-                $page_info->{room_space} = $room_space;
+                if($room_space =~ s/(\d+).*/$1/){
+                    $page_info->{room_space} = $room_space;
+                }else{
+                    $page_info->{room_space} = 0;
+                }
+
                 $page_info->{house_type} = $house_info[4];
                 $page_info->{house_decoration} = $house_info[5];
             }
@@ -257,10 +264,11 @@ sub process_detail_result{
     my $detail_page_dom = $result->res->dom;
     my $url = $result->req->url->to_string;
 
-    if ($url =~ /firewall/) {
+    my $is_firewall = ($url =~ m/firewall/);
+    if ($is_firewall || $result->res->error) {
         $error_query{error_counts} = ++$error_num;
         my $error_info = $result->res->error;
-        $error_info->{'exception'} = '反爬虫，访问过快';
+        $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
         $error_query{$url} = $error_info;
         return;
     }
