@@ -74,8 +74,6 @@ my $ds = Handy::DataSource->new(1);
 #                         say "-------";
 #                    })->wait;
 
-# exit;
-
 while (1) {
 
     my $handy_db = DBI->connect( $ds->handy,
@@ -147,10 +145,10 @@ while (1) {
     }
 
 
-    my $errors = $error_query{error_counts};
+    my $errors = $error_query{error_counts} // 0;
 
     my $grab_info = {
-                     'time_used' => $time_used,
+                     'time_used' => $time_used->string,
                      'grab_urls' => $url_num,
                      'errors' => $errors
                     };
