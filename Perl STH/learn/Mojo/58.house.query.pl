@@ -95,7 +95,7 @@ while (1) {
 
     my $time_used = Timer::Simple->new();
 
-    for my $page (1..2) {
+    for my $page (1..70) {
         Mojo::IOLoop->delay(
                             sub{
                                 my $delay = shift;
