@@ -43,19 +43,6 @@ $ua->on(start => sub {
 
 my $ds = Handy::DataSource->new(1);
 #DBI->trace('2|SQL');
-my $handy_db = DBI->connect( $ds->handy,
-                             #'lust','lust',
-                             'uoko-dev','dev-uoko',
-                             {
-                              'mysql_enable_utf8' => 1,
-                              'RaiseError' => 1
-                             }
-                           ) or die qq(unable to connect $Handy::DataSource::handy\n);
-
-
-my %error_query;
-my $error_num=0;
-my $url_num =0;
 
 #my $dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
 #my $page_info = grab_detail_page($dom);
@@ -69,70 +56,136 @@ my $url_num =0;
 #  (?) ;
 # },undef,'test');
 
+# Mojo::IOLoop->delay(sub{
+#                         my $delay = shift;
+#                         my $end = $delay->begin(0);
+#                         $ua->get('http://nuget.uoko.ioc/'=>$delay->begin(1));
+#                         $ua->get('http://nuget.uoko.ioc/'=>sub{say 2;$end->()});
+#                         $ua->get('http://nuget.uoko.ioc/'=>sub{say 3;$end->($_[1])});
+#                         say "done request async";
+#                     },
+#                     sub{
+#                         say "after request:";
+#                         my ($delay,@results) = @_;
+#                         p my $t = @results;
+#                         for my $res(@results){
+#                             say $res->res->body;
+#                         }
+#                         say "-------";
+#                    })->wait;
 
 # exit;
 
-my $time_used = Timer::Simple->new();
+while (1) {
 
-Mojo::IOLoop->delay(
-                    sub{
-                        my $delay = shift;
-                        for my $area ((qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu))) {
-                            for my $page (1..50) {
-                                my $page_list_url = sprintf('http://cd.58.com/%s/zufang/pn%d/',$area,$page);
+    my $handy_db = DBI->connect( $ds->handy,
+                             #'lust','lust',
+                             'uoko-dev','dev-uoko',
+                             {
+                              'mysql_enable_utf8' => 1,
+                              'RaiseError' => 1,
+                              'PrintError' => 0
+                             }
+                           ) or die qq(unable to connect $Handy::DataSource::handy\n);
+
+
+    my %error_query;
+    my $url_num =0;
+
+
+    my $time_used = Timer::Simple->new();
+
+    for my $page (1..2) {
+        Mojo::IOLoop->delay(
+                            sub{
+                                my $delay = shift;
+
+                                for my $area ((qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu))) {
+                                    my $page_list_url = sprintf('http://cd.58.com/%s/zufang/pn%d/',$area,$page);
+
+                                    my $end = $delay->begin(0);
+                                    $ua->get($page_list_url => sub{
+                                                 my ($ua,$tx) = @_;
+                                                 my $url = $tx->req->url->to_string;
+                                                 my $is_firewall = ($url =~ m/firewall/);
+                                                 if ($is_firewall || $tx->res->error) {
+                                                     $error_query{error_counts}++;
+                                                     my $error_info = $tx->res->error;
+                                                     $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+                                                     $error_query{$url} = $error_info;
+                                                     $end->();
+                                                 } else {
+                                                     $end->($tx->res->dom);
+                                                 }
+                                             });
+                                }
+                            },
+                            sub{
+                                my ($delay,@page_list_doms) = @_;
+
                                 my $end = $delay->begin(0);
+                                for my $page_list_dom (@page_list_doms) {
+                                    my $detail_page_urls_ref = generate_detail_page_urls_ref($page_list_dom);
 
-                                my $delay_time = $page * 0.4;
-                                Mojo::IOLoop->timer( $delay_time => sub{
-                                                         $ua->get($page_list_url => sub{
-                                                                      my ($ua,$tx) = @_;
-                                                                      my $url = $tx->req->url->to_string;
-                                                                      my $is_firewall = ($url =~ m/firewall/);
-                                                                      if ($is_firewall || $tx->res->error) {
-                                                                          $error_query{error_counts} = ++$error_num;
-                                                                          my $error_info = $tx->res->error;
-                                                                          $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
-                                                                          $error_query{$url} = $error_info;
-                                                                          $end->();
-                                                                      } else {
-                                                                          $end->($tx->res->dom);
-                                                                      }
-                                                                  });
-                                                     });
+                                    # 去除已经处理过的 url
+                                    exclude_urls_in_db($detail_page_urls_ref,$handy_db);
+
+                                    while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
+                                        ++$url_num;
+                                        my $delay_time = $url_num * 0.3;
+
+                                        Mojo::IOLoop->timer( $delay_time => sub{
+                                                                 $ua->max_redirects(2)->get($detail_page_url =>sub{
+                                                                                                my ($ua,$result) = @_;
+                                                                                                process_detail_result($result,$puid,\%error_query,$handy_db);
+                                                                                            });
+                                                             });
+                                    }
+                                }
                             }
-                        }
-                    },
-                    sub{
-                        my ($delay,@page_list_doms) = @_;
-
-                        my $end = $delay->begin(0);
-
-                        for my $page_list_dom (@page_list_doms) {
-                            my $detail_page_urls_ref = generate_detail_page_urls_ref($page_list_dom);
-                            while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
-
-                                ++$url_num;
-                                my $delay_time = $url_num * 0.4;
-
-                                Mojo::IOLoop->timer( $delay_time => sub{
-                                                         $ua->max_redirects(2)->get($detail_page_url =>sub{
-                                                                                        my ($ua,$result) = @_;
-                                                                                        process_detail_result($result,$puid);
-                                                                                    });
-                                                     });
-                            }
-                        }
-                    }
-                   )->wait;
+                           )->wait;
+    }
 
 
-my $error_json = encode_json(\%error_query);
-$cwd->path("/error.json")->spew($error_json);
+    my $errors = $error_query{error_counts};
 
-say "error_num: $error_num";
-say "done!\ntime used: $time_used";
-say "total urls => $url_num";
+    my $grab_info = {
+                     'time_used' => $time_used,
+                     'grab_urls' => $url_num,
+                     'errors' => $errors
+                    };
+    say "done!";
+    p $grab_info;
 
+    # write info into db
+    my $info_sql = q{
+INSERT INTO `handy`.`grab_info` (
+  `grab_info`,
+  `site_info_counts`,
+  `errors`
+)
+VALUES
+  (?,?,?) ;
+};
+
+    my $grab_info_json = encode_json($grab_info);
+    my $error_json = encode_json(\%error_query);
+    my $site_info_counts = ($handy_db->selectrow_array("SELECT COUNT(*) FROM grab_site_info;"));
+    $handy_db->do($info_sql,undef,$grab_info_json,$site_info_counts,$error_json);
+
+    $handy_db->disconnect;
+
+    if ($errors) {
+        my $wait_time = $errors > 300 ? 300 : $errors;
+        sleep($wait_time);
+    }
+
+    my $wait_time = 600 - $url_num;
+    if ($wait_time < 1) {
+        $wait_time = 60;
+    }
+    sleep($wait_time);
+}
 
 sub grab_detail_page{
     my ($page_dom) = @_;
@@ -241,14 +294,11 @@ sub generate_detail_page_urls_ref{
 
     my $page_urls_ref = \%detail_page_urls;
 
-    # 去除已经处理过的 url
-    exclude_urls_in_db($page_urls_ref);
-
     return $page_urls_ref;
 }
 
 sub exclude_urls_in_db{
-    my ($page_urls) = @_;
+    my ($page_urls,$handy_db) = @_;
     my @puids_from_web = keys %$page_urls;
 
     my $query_sql = q{
@@ -270,16 +320,16 @@ WHERE i.puid IN ('%s');
 
 
 sub process_detail_result{
-    my ($result,$puid) = @_;
+    my ($result,$puid,$error_query,$handy_db) = @_;
     my $detail_page_dom = $result->res->dom;
     my $url = $result->req->url->to_string;
 
     my $is_firewall = ($url =~ m/firewall/);
     if ($is_firewall || $result->res->error) {
-        $error_query{error_counts} = ++$error_num;
+        ($error_query->{error_counts})++;
         my $error_info = $result->res->error;
         $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
-        $error_query{$url} = $error_info;
+        $error_query->{$url} = $error_info;
         return;
     }
     my $body = decode('utf8',$result->res->body);
@@ -322,10 +372,10 @@ VALUES
 
     }catch{
         if ($_ !~ m/Duplicate entry/) {
-            $error_query{error_counts} = ++$error_num;
+            ($error_query->{error_counts})++;
             my $error_info = $result->res->error;
             $error_info->{'exception'} = $_;
-            $error_query{$url} = $error_info;
+            $error_query->{$url} = $error_info;
         }
     };
 }
@@ -351,4 +401,22 @@ CREATE TABLE `grab_site_info` (
                                `created_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
                                PRIMARY KEY (`id`),
                                UNIQUE KEY `idx_puid` (`puid`)
-                              ) ENGINE=InnoDB AUTO_INCREMENT=337 DEFAULT CHARSET=utf8
+                              ) ENGINE=InnoDB AUTO_INCREMENT=7879 DEFAULT CHARSET=utf8;
+
+CREATE TABLE `export_info` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `export_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `counts` int(11) NOT NULL,
+        `export_max_id` int(11) NOT NULL,
+        PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE `grab_info` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `grab_info` varchar(500) DEFAULT NULL,
+  `site_info_counts` int(11) NOT NULL,
+  `errors` text,
+  `grab_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
