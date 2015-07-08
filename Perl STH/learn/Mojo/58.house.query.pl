@@ -34,7 +34,7 @@ use HandyDataSource;
 
 my $cwd = Path::Tiny->cwd;
 my $ua = Mojo::UserAgent->new;
-$ua    = $ua->connect_timeout(1)->request_timeout(2);
+$ua    = $ua->connect_timeout(1)->request_timeout(1);
 
 $ua->on(start => sub {
             my ($ua, $tx) = @_;
@@ -90,17 +90,17 @@ while (1) {
     my %error_query;
     my $url_num =0;
 
-
+    my $process_progress = 1;
     my $time_used = Timer::Simple->new();
 
     for my $page (1..70) {
+        say "page: $page  $time_used->elapsed";
         Mojo::IOLoop->delay(
                             sub{
                                 my $delay = shift;
 
                                 for my $area ((qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu))) {
                                     my $page_list_url = sprintf('http://cd.58.com/%s/zufang/pn%d/',$area,$page);
-
                                     my $end = $delay->begin(0);
                                     $ua->get($page_list_url => sub{
                                                  my ($ua,$tx) = @_;
@@ -122,19 +122,23 @@ while (1) {
                                 my ($delay,@page_list_doms) = @_;
 
                                 my $end = $delay->begin(0);
+                                my $process_count = 1;
+
                                 for my $page_list_dom (@page_list_doms) {
+
                                     my $detail_page_urls_ref = generate_detail_page_urls_ref($page_list_dom);
 
                                     # 去除已经处理过的 url
                                     exclude_urls_in_db($detail_page_urls_ref,$handy_db);
 
                                     while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
-                                        ++$url_num;
-                                        my $delay_time = $url_num * 0.3;
+
+                                        my $delay_time = ($process_count++) * 0.25;
 
                                         Mojo::IOLoop->timer( $delay_time => sub{
                                                                  $ua->max_redirects(2)->get($detail_page_url =>sub{
                                                                                                 my ($ua,$result) = @_;
+                                                                                                ++$url_num;
                                                                                                 process_detail_result($result,$puid,\%error_query,$handy_db);
                                                                                             });
                                                              });
