@@ -24,11 +24,6 @@ use List::Util qw(any);
 BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/")};
 use HandyDataSource;
 
-
-#use UOKO::Schema qw();
-#my $schema = UOKO::Schema->connect('dbi:SQLite:db/example.db');
-
-
 #my $page = path('C:\Users\jiajun\Desktop\test.html');
 #my $mojo_dom = Mojo::DOM->new($page->slurp_utf8);
 
@@ -46,33 +41,6 @@ my $ds = Handy::DataSource->new(1);
 
 #my $dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
 #my $page_info = grab_detail_page($dom);
-
-#my $t = $ua->get('http://cd.58.com/zufang/21872309818767x.shtml')->res->dom;
-#$t = $t->at("div.bigtitle")->all_text;
-#$t = encode('gbk',$t);
-#say $t;
-# $handy_db->do(q{INSERT INTO `handy`.`test` (`name`)
-# VALUES
-#  (?) ;
-# },undef,'test');
-
-# Mojo::IOLoop->delay(sub{
-#                         my $delay = shift;
-#                         my $end = $delay->begin(0);
-#                         $ua->get('http://nuget.uoko.ioc/'=>$delay->begin(1));
-#                         $ua->get('http://nuget.uoko.ioc/'=>sub{say 2;$end->()});
-#                         $ua->get('http://nuget.uoko.ioc/'=>sub{say 3;$end->($_[1])});
-#                         say "done request async";
-#                     },
-#                     sub{
-#                         say "after request:";
-#                         my ($delay,@results) = @_;
-#                         p my $t = @results;
-#                         for my $res(@results){
-#                             say $res->res->body;
-#                         }
-#                         say "-------";
-#                    })->wait;
 
 while (1) {
 
