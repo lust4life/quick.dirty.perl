@@ -1,5 +1,3 @@
-package Grab::Site;
-
 use strict;
 use warnings;
 use diagnostics;
@@ -18,24 +16,159 @@ use Try::Tiny;
 use DBI qw(:sql_types);
 use utf8;
 use experimental 'smartmatch';
-use List::Util qw(any);
-
-sub new{
-    my $class = shift;
-    my ($info)= @_;
-
-    bless($info,$class);
-    return $info;
-}
-
-
 
 use enum qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi);
+use List::Util qw(any);
 
 
+BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/")};
+use HandyDataSource;
+
+#my $page = path('C:\Users\jiajun\Desktop\test.html');
+#my $mojo_dom = Mojo::DOM->new($page->slurp_utf8);
+
+my $cwd = Path::Tiny->cwd;
+my $ua = Mojo::UserAgent->new;
+$ua    = $ua->connect_timeout(1)->request_timeout(1);
+
+$ua->on(start => sub {
+            my ($ua, $tx) = @_;
+            $tx->req->headers->user_agent('Mozilla/5.0 (Windows NT 6.3; Win64; x64; rv:40.0) Gecko/20100101 Firefox/40.0');
+        });
+
+my $ds = Handy::DataSource->new(1);
+#DBI->trace('2|SQL');
+
+#my $dom = Mojo::DOM->new(path('c:/users/jiajun/desktop/test1.html')->slurp_utf8);
+#my $page_info = grab_detail_page($dom);
+
+#my $area_list = qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu);
+my @area_list = (qw(wuhou));
+my $list_page_url_tpl = q(http://cd.ganji.com/fang1/%s/m1o%d/);
+my %error_query;
+my $handy_db;
+sub new{
+  my $class = shift;
+  my ($db) = @_;
+  $handy_db = $db;
+  my $self = {
+
+             };
+  bless($self,$class);
+  return $self;
+}
+
+my $i = 1;
+Mojo::IOLoop->delay(sub{
+                        for(1..3){
+                            Mojo::IOLoop->delay(sub{
+                                                    my $delay = shift;
+                                                    my $end = $delay->begin();
+                                                    Mojo::IOLoop->timer(1 => sub{
+                                                                            say "time1" . $i++;
+                                                                            $end->();
+                                                                        });
+                                                })->wait;
+                            say "$_";
+                        }
+                    });
+
+Mojo::IOLoop->delay(sub{
+                        my $d = shift;
+
+                        for(1..3){
+                            my $end = $d->begin();
+                            Mojo::IOLoop->timer(3 => sub{
+                                                    say "time2" . $i++;
+                                                    $end->();
+                                                });
+                        }
+                    });
+
+say "before done";
+Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+say "done";
+
+__END__
 
 
-# 排除已经处理过的 url
+Mojo::IOLoop->delay(
+                    sub{
+                        my $delay = shift;
+                        generate_list_dom(1,$delay);
+                    },
+                    sub{
+                        my ($delay,@detail_url_refs) = @_;
+                        my $end = $delay->begin(0);
+
+                    }
+                   )->wait;
+
+#Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+# 遍历每个区域,获取列表页的详情页 url 数据
+sub generate_list_dom{
+    my ($page_index,$delay) = @_;
+
+    for my $area (@area_list) {
+        my $page_list_url = sprintf($list_page_url_tpl,$area,$page_index);
+        my $end = $delay->begin(0);
+        $ua->get($page_list_url => sub{
+                     my ($ua, $tx) = @_;
+                     my $url = $tx->req->url->to_string;
+                     my $is_firewall = ($url =~ m/firewall/);
+                     if ($is_firewall || $tx->res->error) {
+                         $error_query{error_counts}++;
+                         my $error_info = $tx->res->error;
+                         $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+                         $error_query{$url} = $error_info;
+                         $end->();
+                     } else {
+                         my $list_dom = $tx->res->dom;
+
+                         # 分析 dom
+                         my $detail_page_urls_ref = generate_detail_page_urls_ref($list_dom);
+
+                         # 去除处理过的 url , 1 means ganji
+                         exclude_urls_in_db($handy_db,$detail_page_urls_ref,1);
+
+                         my $process_count = 1;
+                         while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
+
+                                        my $delay_time = ($process_count++) * 0.2;
+
+                                        Mojo::IOLoop->timer( $delay_time => sub{
+                                                                 $ua->max_redirects(2)->get($detail_page_url =>sub{
+                                                                                                my ($ua,$result) = @_;
+                                                                                                ++$url_num;
+                                                                                                process_detail_result($result,$puid,\%error_query,$handy_db);
+                                                                                            });
+                                                             });
+                                    }
+
+                         $end->($detail_page_urls_ref);
+                     }
+                 });
+    }
+}
+
+sub generate_detail_page_urls_ref{
+    my ($page_list_dom)  = @_;
+
+    my %detail_page_urls;
+    my $tr_doms = $page_list_dom->find("li[id^=puid-]")->each(sub{
+                                                                  my ($dom) = @_;
+                                                                  my $puid = $dom->attr('id');
+                                                                  $puid =~ s/^puid-(\d+).*$/$1/;
+                                                                  my $url = "http://cd.ganji.com/fang1/${puid}x.htm";
+
+                                                                  $detail_page_urls{$puid} = $url;
+                                                              });
+    my $page_urls_ref = \%detail_page_urls;
+
+    return $page_urls_ref;
+}
+
 sub exclude_urls_in_db{
     my ($handy_db,$page_urls,$site_source) = @_;
     my @puids_from_web = keys %$page_urls;
@@ -57,70 +190,24 @@ WHERE i.site_source = $site_source i.puid IN ('%s');
     }
 }
 
-# 保存 page info 到数据库
-sub save_page_info{
-    my ($handy_db,$page_info,$site_source) = @_;
-
-    # 写入数据库
-    my $insert_sql = qq{
-INSERT INTO `handy`.`grab_site_info` (
-  `site_source`,
-  `puid`,
-  `url`,
-  `price`,
-  `show_date`,
-  `address`,
-  `floor`,
-  `room_type`,
-  `room_space`,
-  `house_type`,
-  `house_decoration`,
-  `region_district`,
-  `region_street`,
-  `region_xiaoqu`,
-  `peizhi_info`
-)
-VALUES
-  ($site_source,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
-};
-
-    my @params = @{$page_info}{qw(puid url price show_data address floor room_type room_space house_type house_decoration region_district region_street region_xiaoqu peizhi_info)};
-    my $sth = $handy_db->prepare($insert_sql);
-
-    # peizhi int 结构
-    $sth->bind_param(14,$params[13],SQL_INTEGER);
-    $sth->execute(@params);
-}
-
-
-
-
-
-sub generate_detail_page_urls_ref_{
-    my ($page_list_dom)  = @_;
-
-    my %detail_page_urls;
-    my $tr_doms = $page_list_dom->find("li[id^=puid-]")->each(sub{
-                                                                  my ($dom) = @_;
-                                                                  my $puid = $dom->attr('id');
-                                                                  $puid =~ s/^puid-(\d+).*$/$1/;
-                                                                  my $url = "http://cd.ganji.com/fang1/${puid}x.htm";
-
-                                                                  $detail_page_urls{$puid} = $url;
-                                                              });
-    my $page_urls_ref = \%detail_page_urls;
-
-    return $page_urls_ref;
-}
-
-
-
-
 
 
 __END__
 
+
+
 while (1) {
+
+    my $handy_db = DBI->connect( $ds->handy,
+                                 #'lust','lust',
+                                 'uoko-dev','dev-uoko',
+                                 {
+                                  'mysql_enable_utf8' => 1,
+                                  'RaiseError' => 1,
+                                  'PrintError' => 0
+                                 }
+                               ) or die qq(unable to connect $Handy::DataSource::handy\n);
+
 
     my %error_query;
     my $url_num =0;
@@ -223,8 +310,8 @@ VALUES
     }
     sleep($wait_time);
 }
-# 具体的抓取页面信息
-sub grab_detail_page_58{
+
+sub grab_detail_page{
     my ($page_dom) = @_;
     my $date_dom = $page_dom->at("li.time");
     my $date = $date_dom->text if $date_dom;
@@ -334,8 +421,9 @@ sub generate_detail_page_urls_ref{
     return $page_urls_ref;
 }
 
-# 处理 58 数据,写入 db
-sub process_detail_result_58{
+
+
+sub process_detail_result{
     my ($result,$puid,$error_query,$handy_db) = @_;
     my $detail_page_dom = $result->res->dom;
     my $url = $result->req->url->to_string;
