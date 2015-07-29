@@ -17,7 +17,7 @@ use DBI qw(:sql_types);
 use utf8;
 use experimental 'smartmatch';
 
-use enum qw(ganji f58 fang);
+use enum qw(f58 ganji fang);
 use List::Util qw(any);
 
 
@@ -26,7 +26,7 @@ use HandyDataSource;
 use GrabSite;
 
 my $ua = Mojo::UserAgent->new;
-$ua    = $ua->connect_timeout(1)->request_timeout(1);
+$ua    = $ua->connect_timeout(1)->request_timeout(3);
 
 $ua->on(start => sub {
             my ($ua, $tx) = @_;
@@ -53,7 +53,7 @@ my $grab_ganji = Grab::Site->new({
                                   db => $handy_db,
                                   site_source => ganji,
                                   ua => $ua,
-                                  area_list => [qw(wohou)],##my $area_list = qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu);
+                                  area_list => [qw(wuhou)],##my $area_list = qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu);
                                   list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
                                  });
 

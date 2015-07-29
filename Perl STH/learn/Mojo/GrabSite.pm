@@ -22,6 +22,20 @@ use experimental 'smartmatch';
 use enum qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi meiqi jiaju);
 use List::Util qw(any);
 
+my $generate_detail_page_urls_ref_func = {
+                                          '0'=> \&generate_detail_page_urls_ref_58,
+                                          '1'=> \&generate_detail_page_urls_ref_ganji,
+                                          '2'=> \&generate_detail_page_urls_ref_fang,
+                                         };
+
+my $grab_detail_page_func = {
+                            '0' => \&grab_detail_page_58,
+                            '1' => \&grab_detail_page_ganji,
+                            '2' => \&grab_detail_page_fang,
+                           };
+
+
+
 
 sub new{
     my ($class,$info) = @_;
@@ -78,7 +92,7 @@ sub grab_page{
                          my $list_dom = $tx->res->dom;
 
                          # 分析 dom
-                         my $detail_page_urls_ref = generate_detail_page_urls_ref_func{$site_source}->($list_dom,$site_source);
+                         my $detail_page_urls_ref = $generate_detail_page_urls_ref_func->{$site_source}->($list_dom,$site_source);
 
                          # 去除处理过的 url
                          exclude_urls_in_db($handy_db,$detail_page_urls_ref,$site_source);
@@ -86,7 +100,7 @@ sub grab_page{
                          my $process_count = 1;
                          while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
 
-                             my $delay_time = ($process_count++) * 0.2;
+                             my $delay_time = ($process_count++) * 0.3;
                              my $timer_delay = $delay->begin(0);
                              Mojo::IOLoop->timer( $delay_time => sub{
                                                       $ua->max_redirects(2)->get($detail_page_url =>sub{
@@ -104,11 +118,6 @@ sub grab_page{
     }
 }
 
-my $generate_detail_page_urls_ref_func = {
-                                          '0'=> \&generate_detail_page_urls_ref_58,
-                                          '1'=> \&generate_detail_page_urls_ref_ganji,
-                                          '2'=> \&generate_detail_page_urls_ref_fang,
-                                         };
 
 
 sub generate_detail_page_urls_ref_ganji{
@@ -178,12 +187,12 @@ sub exclude_urls_in_db{
     my ($handy_db,$page_urls,$site_source) = @_;
     my @puids_from_web = keys %$page_urls;
 
-    my $query_sql = q{
+    my $query_sql = qq{
 SELECT
   i.puid
 FROM
   grab_site_info i
-WHERE i.site_source = $site_source i.puid IN ('%s');
+WHERE i.site_source = $site_source and i.puid IN ('%s');
 };
 
     $query_sql = sprintf($query_sql,join("','",@puids_from_web));
@@ -255,7 +264,7 @@ sub process_detail_result{
     }
 
     try{
-        my $page_info = grab_detail_page_func{$site_source}->($detail_page_dom);
+        my $page_info = $grab_detail_page_func->{$site_source}->($detail_page_dom);
         $page_info->{'url'} = $url;
         $page_info->{'puid'} = $puid;
 
@@ -270,11 +279,6 @@ sub process_detail_result{
     };
 }
 
-my $grab_detail_page_func = {
-                            '0' => \&grab_detail_page_58,
-                            '1' => \&grab_detail_page_ganji,
-                            '2' => \&grab_detail_page_fang,
-                           };
 
 sub grab_detail_page_58{
     my ($page_dom) = @_;
@@ -283,8 +287,7 @@ sub grab_detail_page_58{
     $date = DateTime->today()->ymd unless $date;
     my $summary = $page_dom->find("ul.suUl>li");
 
-    my $page_info = {show_data=>$date};
-
+    my $page_info = {show_data=>$date,peizhi_info=>0};
 
     foreach my $row (@$summary) {
         my $title_dom = $row->at("div.su_tit");
@@ -362,7 +365,7 @@ sub grab_detail_page_ganji{
     $date = DateTime->today()->ymd unless $date;
     my $summary = $page_dom->find("ul.basic-info-ul>li");
 
-    my $page_info = {show_data=>$date};
+    my $page_info = {show_data=>$date,peizhi_info=>0};
 
 
     foreach my $row (@$summary) {
