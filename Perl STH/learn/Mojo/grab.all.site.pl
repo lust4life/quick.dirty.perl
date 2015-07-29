@@ -124,3 +124,91 @@ $delay_ganji->on(finish=>sub{
 
 
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+
+__END__
+
+/*
+SQLyog Trial v12.01 (64 bit)
+MySQL - 5.6.21 : Database - handy
+*********************************************************************
+*/
+
+
+/*!40101 SET NAMES utf8 */;
+
+/*!40101 SET SQL_MODE=''*/;
+
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+CREATE DATABASE /*!32312 IF NOT EXISTS*/`handy` /*!40100 DEFAULT CHARACTER SET utf8 */;
+
+USE `handy`;
+
+/*Table structure for table `export_info` */
+
+DROP TABLE IF EXISTS `export_info`;
+
+CREATE TABLE `export_info` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `export_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `counts` int(11) NOT NULL,
+  `export_max_id` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8;
+
+/*Table structure for table `grab_info` */
+
+DROP TABLE IF EXISTS `grab_info`;
+
+CREATE TABLE `grab_info` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `grab_info` varchar(500) DEFAULT NULL,
+  `site_info_counts` int(11) NOT NULL,
+  `errors` text,
+  `grab_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=191 DEFAULT CHARSET=utf8;
+
+/*Table structure for table `grab_site_info` */
+
+DROP TABLE IF EXISTS `grab_site_info`;
+
+CREATE TABLE `grab_site_info` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `site_source` int(11) NOT NULL COMMENT '58:0,gj:1,fang:2',
+  `puid` varchar(50) NOT NULL,
+  `url` varchar(1000) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `show_date` datetime NOT NULL,
+  `address` varchar(50) DEFAULT NULL,
+  `floor` varchar(50) DEFAULT NULL,
+  `room_type` varchar(50) DEFAULT NULL,
+  `room_space` decimal(10,2) DEFAULT NULL,
+  `house_type` varchar(50) DEFAULT NULL,
+  `house_decoration` varchar(50) DEFAULT NULL,
+  `region_district` varchar(50) DEFAULT NULL,
+  `region_street` varchar(50) DEFAULT NULL,
+  `region_xiaoqu` varchar(50) DEFAULT NULL,
+  `peizhi_info` bit(20) NOT NULL DEFAULT b'0' COMMENT 'use enum qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi);',
+  `created_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_puid` (`site_source`,`puid`),
+  KEY `idx_site_source` (`site_source`),
+  KEY `idx_show_date` (`show_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=195912 DEFAULT CHARSET=utf8;
+
+/*Table structure for table `test` */
+
+DROP TABLE IF EXISTS `test`;
+
+CREATE TABLE `test` (
+  `name` varchar(50) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
