@@ -21,8 +21,9 @@ use enum qw(ganji f58 fang);
 use List::Util qw(any);
 
 
-BEGIN{push(@INC,("e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/",'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/'))};
+BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/");push(@INC,'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/')};
 use HandyDataSource;
+use GrabSite;
 
 my $ua = Mojo::UserAgent->new;
 $ua    = $ua->connect_timeout(1)->request_timeout(1);
@@ -45,6 +46,7 @@ my $handy_db = DBI->connect( $ds->handy,
                            ) or die qq(unable to connect $Handy::DataSource::handy\n);
 
 
+my ($page_ganji, $page_58, $page_fang) = (1,1,1);
 
 
 my $grab_ganji = Grab::Site->new({
@@ -56,19 +58,21 @@ my $grab_ganji = Grab::Site->new({
                                  });
 
 my $grab_58 =  Grab::Site->new({
-                                db => $handy_db,
-                                site_source => f58,
-                                ua => $ua,
+                                  db => $handy_db,
+                                  site_source => ganji,
+                                  ua => $ua,
+                                  area_list => [qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)],
+                                  list_page_url_tpl => q(http://cd.58.com/%s/zufang/pn%d/),
                                });
 
 my $grab_fang =  Grab::Site->new({
                                   db => $handy_db,
-                                  site_source => fang,
+                                  site_source => ganji,
                                   ua => $ua,
+                                  area_list => [qw(wohou)],
+                                  list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
                                  });
 
-
-my ($page_ganji, $page_58, $page_fang) = (1,1,1);
 
 
 my $delay_ganji = Mojo::IOLoop->delay(sub{
@@ -79,7 +83,7 @@ my $delay_ganji = Mojo::IOLoop->delay(sub{
 $delay_ganji->on(finish=>sub{
                      my $delay = shift;
 
-                     if($page_ganji == 150){
+                     if($page_ganji == 3){
                          # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
 
                          $grab_ganji->log_grab_info();
@@ -96,27 +100,27 @@ $delay_ganji->on(finish=>sub{
                  });
 
 
-my $delay_58 = Mojo::IOLoop->delay(sub{
-                                       my $delay = shift;
-                                       $grab_58->grab_page($delay,$page_58);
-                                   });
-$delay_58->on(finish=>sub{
-                  # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+# my $delay_58 = Mojo::IOLoop->delay(sub{
+#                                        my $delay = shift;
+#                                        $grab_58->grab_page($delay,$page_58);
+#                                    });
+# $delay_58->on(finish=>sub{
+#                   # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
 
-                  # 然后最后递归调用抓取
-                  $page_58++;
-              });
+#                   # 然后最后递归调用抓取
 
-my $delay_fang = Mojo::IOLoop->delay(sub{
-                                         my $delay = shift;
-                                         $grab_fang->grab_page($delay,$page_fang);
-                                     });
-$delay_fang->on(finish=>sub{
-                    # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+#               });
 
-                    # 然后最后递归调用抓取
-                    $page_fang++;
-                });
+# my $delay_fang = Mojo::IOLoop->delay(sub{
+#                                          my $delay = shift;
+#                                          $grab_fang->grab_page($delay,$page_fang);
+#                                      });
+# $delay_fang->on(finish=>sub{
+#                     # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+
+#                     # 然后最后递归调用抓取
+
+#                 });
 
 
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;

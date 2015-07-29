@@ -26,12 +26,16 @@ use List::Util qw(any);
 sub new{
     my ($class,$info) = @_;
 
-    $info->{'error_query'} = {};
-    $info->{'grab_urls'} = 0;
-
+    init($info);
 
     bless($info,$class);
     return $info;
+}
+
+sub init{
+    my ($self) = @_;
+    $self->{'error_query'} = {};
+    $self->{'grab_urls'} = 0;
 }
 
 sub check_firewall{
@@ -87,7 +91,7 @@ sub grab_page{
                              Mojo::IOLoop->timer( $delay_time => sub{
                                                       $ua->max_redirects(2)->get($detail_page_url =>sub{
                                                                                      my ($ua,$result) = @_;
-                                                                                     # ++$url_num;
+                                                                                     ++($self->{'grab_urls'});
                                                                                      process_detail_result($result,$puid,$error_query,$handy_db,$site_source);
                                                                                      $timer_delay->();
                                                                                  });
@@ -101,9 +105,9 @@ sub grab_page{
 }
 
 my $generate_detail_page_urls_ref_func = {
-                                          '0'=> &generate_detail_page_urls_ref_58,
-                                          '1'=> &generate_detail_page_urls_ref_ganji,
-                                          '2'=> &generate_detail_page_urls_ref_fang,
+                                          '0'=> \&generate_detail_page_urls_ref_58,
+                                          '1'=> \&generate_detail_page_urls_ref_ganji,
+                                          '2'=> \&generate_detail_page_urls_ref_fang,
                                          };
 
 
@@ -267,9 +271,9 @@ sub process_detail_result{
 }
 
 my $grab_detail_page_func = {
-                            '0' => &grab_detail_page_58,
-                            '1' => &grab_detail_page_ganji,
-                            '2' => &grab_detail_page_fang,
+                            '0' => \&grab_detail_page_58,
+                            '1' => \&grab_detail_page_ganji,
+                            '2' => \&grab_detail_page_fang,
                            };
 
 sub grab_detail_page_58{
@@ -477,8 +481,8 @@ VALUES
     my $site_info_counts = ($handy_db->selectrow_array("SELECT COUNT(*) FROM grab_site_info where site_source = $site_source;"));
     $handy_db->do($info_sql,undef,$grab_info_json,$site_info_counts,$error_json);
 
-    # 清空 error_query
-    $self->{error_query} = {};
+    # 清空 error_query, grab_urls
+    init($self);
 }
 
 sub start_timer{
@@ -489,10 +493,7 @@ sub start_timer{
 
 sub reset_timer{
     my ($self) = @_;
-    say "$self->{'timer'}";
-    sleep(3);
     $self->{'timer'}->start;
-    say "$self->{'timer'}";
 }
 
 
