@@ -21,7 +21,7 @@ use enum qw(ganji f58 fang);
 use List::Util qw(any);
 
 
-BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/")};
+BEGIN{push(@INC,("e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/",'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/'))};
 use HandyDataSource;
 
 my $ua = Mojo::UserAgent->new;
@@ -47,31 +47,76 @@ my $handy_db = DBI->connect( $ds->handy,
 
 
 
-my $ganji = Grab::Site->new({
-                             db => $handy_db,
-                             site_source => ganji,
-                             ua => $ua,
-                            });
-my $f58 =  Grab::Site->new({
-                            db => $handy_db,
-                            site_source => f58,
-                            ua => $ua,
-                           });
+my $grab_ganji = Grab::Site->new({
+                                  db => $handy_db,
+                                  site_source => ganji,
+                                  ua => $ua,
+                                  area_list => [qw(wohou)],##my $area_list = qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu);
+                                  list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
+                                 });
 
-my $fang =  Grab::Site->new({
-                             db => $handy_db,
-                             site_source => fang,
-                             ua => $ua,
-                            });
+my $grab_58 =  Grab::Site->new({
+                                db => $handy_db,
+                                site_source => f58,
+                                ua => $ua,
+                               });
 
-for $page(1..2){
+my $grab_fang =  Grab::Site->new({
+                                  db => $handy_db,
+                                  site_source => fang,
+                                  ua => $ua,
+                                 });
 
-    $ganji->grab()
 
-}
+my ($page_ganji, $page_58, $page_fang) = (1,1,1);
 
-$ganji->grab();
-$f58->grab();
-$fang->grab();
+
+my $delay_ganji = Mojo::IOLoop->delay(sub{
+                                          my $delay = shift;
+                                          $grab_ganji->start_timer();
+                                          $grab_ganji->grab_page($delay,$page_ganji);
+                                      });
+$delay_ganji->on(finish=>sub{
+                     my $delay = shift;
+
+                     if($page_ganji == 150){
+                         # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+
+                         $grab_ganji->log_grab_info();
+
+                         $grab_ganji->reset_timer();
+
+                         $page_ganji = 1;
+                     }else{
+                         $page_ganji++;
+                     }
+
+                     # 然后最后递归调用抓取
+                     $grab_ganji->grab_page($delay,$page_ganji);
+                 });
+
+
+my $delay_58 = Mojo::IOLoop->delay(sub{
+                                       my $delay = shift;
+                                       $grab_58->grab_page($delay,$page_58);
+                                   });
+$delay_58->on(finish=>sub{
+                  # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+
+                  # 然后最后递归调用抓取
+                  $page_58++;
+              });
+
+my $delay_fang = Mojo::IOLoop->delay(sub{
+                                         my $delay = shift;
+                                         $grab_fang->grab_page($delay,$page_fang);
+                                     });
+$delay_fang->on(finish=>sub{
+                    # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+
+                    # 然后最后递归调用抓取
+                    $page_fang++;
+                });
+
 
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
