@@ -50,13 +50,14 @@ sub init{
     my ($self) = @_;
     $self->{'error_query'} = {};
     $self->{'grab_urls'} = 0;
+    $self->{'page_num'} = 1;
 }
 
 sub check_firewall{
     my ($tx,$site_source) = @_;
 
     my $url = $tx->req->url->to_string;
-    my $is_firewall = ($url =~ m/firewall/);
+    my $is_firewall = ($url =~ m/firewall/) || ($url =~ m/confirm/);
 
 
     return $is_firewall;
@@ -64,7 +65,9 @@ sub check_firewall{
 
 # 抓取一页数据
 sub grab_page{
-    my ($self,$delay,$page_index) = @_;
+    my ($self,$delay) = @_;
+
+    my $page_index = $self->{'page_num'};
     my $ua = $self->{'ua'};
     my $error_query = $self->{'error_query'};
 
@@ -72,6 +75,8 @@ sub grab_page{
     my $list_page_url_tpl = $self->{'list_page_url_tpl'};
     my $site_source = $self->{'site_source'};
     my $handy_db = $self->{'db'};
+
+    say "grab $site_source : $page_index";
 
     for my $area (@$area_list) {
         my $page_list_url = sprintf($list_page_url_tpl,$area,$page_index);
@@ -268,7 +273,7 @@ sub process_detail_result{
         $page_info->{'url'} = $url;
         $page_info->{'puid'} = $puid;
 
-        save_page_info($handy_db,$page_info,1);
+        save_page_info($handy_db,$page_info,$site_source);
     }catch{
         if ($_ !~ m/Duplicate entry/) {
             ($error_query->{error_counts})++;
@@ -309,7 +314,7 @@ sub grab_detail_page_58{
             when('概况'){
                 my @house_info = split(/\s/,$row->at("div.su_con")->text);
                 $page_info->{room_type} = join("-",@house_info[0,1,2]);
-                my $room_space = $house_info[3];
+                my $room_space = $house_info[3] // 0;
                 if ($room_space =~ s/(\d+).*/$1/) {
                     $page_info->{room_space} = $room_space;
                 } else {
@@ -362,6 +367,7 @@ sub grab_detail_page_ganji{
     my ($page_dom) = @_;
     my $date_dom = $page_dom->at("ul.title-info-l>li:nth-child(1)>i");
     my $date = $date_dom->text if $date_dom;
+    $date =~ s/(\d{2}-\d{2}) .*/2015-$1/g;
     $date = DateTime->today()->ymd unless $date;
     my $summary = $page_dom->find("ul.basic-info-ul>li");
 
@@ -498,6 +504,42 @@ sub reset_timer{
     my ($self) = @_;
     $self->{'timer'}->start;
 }
+
+sub start{
+    my ($self) = @_;
+
+    my $page_total = $self->{'page_total'};
+    my $site_source = $self->{'site_source'};
+
+    my $delay = Mojo::IOLoop->delay();
+    $self->start_timer();
+    $self->grab_page($delay);
+
+    $delay->on(finish=>sub{
+                   my $task = shift;
+                   my $page_num = $self->{'page_num'};
+
+                   say "---------------- done $site_source : $page_num";
+
+                   if($page_num == $page_total){
+                       # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
+
+                       $self->log_grab_info();
+
+                       $self->reset_timer();
+
+                       $self->{page_num} = 1;
+                   }else{
+                       $self->{page_num}++;
+                   }
+
+                   # 然后最后递归调用抓取
+                   $self->grab_page($task);
+               });
+
+    return $delay;
+}
+
 
 
 1;
