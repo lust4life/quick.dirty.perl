@@ -306,6 +306,111 @@ sub process_detail_result{
     };
 }
 
+sub grab_detail_page_fang{
+    my ($page_dom) = @_;
+
+    my $date_dom = $page_dom->at("div.houseInfo dl.title p[class]");
+    my $date = $date_dom->text if $date_dom;
+    $date = decode("gb2312",$date);
+
+    $date =~ s<.*?(\d{4}[/-]\d{1,2}[/-]\d{1,2}) .*><$1>g;
+    $date = DateTime->today()->ymd unless $date;
+
+
+    my $page_info = {show_data=>$date,peizhi_info=>0,price=>0};
+
+    my $summary = $page_dom->find("div.info ul>li");
+
+    foreach my $row (@$summary) {
+        my $row_text = decode('gb2312', $row->all_text);
+
+        my ($title,$content) = ();
+        if($row_text =~ m/(.+)：?(.*)/g){
+            $title = $1;
+            $content = $2;
+
+            $title =~ s/[\s]//g;
+        }else{
+            $title = $row_text;
+        }
+
+        given($title){
+            when(/元/){
+                my $price = $title =~ m/(\d+).*元/g ? $1 : 0;
+                $page_info->{price} = $price;
+            }
+            when('小区'){
+                my @region = $row->find("a")->map('text')->each;
+                my $district = $region[-2];
+                my $street = $region[-1];
+                $district = decode('gb2312',$district);
+                $street = decode('gb2312',$street);
+                $page_info->{region_district} = $district;
+                $page_info->{region_street} = $street;
+            }
+            when(/(家具家电)|(配套设施)/){
+                my $peizhi_bit_mask = 0;
+
+                if ($content) {
+                    my @peizhi_info = split(',',$content);
+
+                    $peizhi_bit_mask |= PZ_chuang if any {$_ =~ '床'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_kuandai if any {$_ =~ '宽带'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_dianshi if any {$_ =~ '电视'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_bingxiang if any {$_ =~ '冰箱'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_xiyiji if any {$_ =~ '洗衣机'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_kongtiao if any {$_ =~ '空调'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_reshuiqi if any {$_ =~ '热水器'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_nuanqi if any {$_ =~ '暖气'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_yigui if any {$_ =~ '衣柜'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_shafa if any {$_ =~ '沙发'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_meiqi if any {$_ =~ '煤气'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_jiaju if any {$_ =~ '家具'} @peizhi_info;
+                }
+                $page_info->{peizhi_info} = $peizhi_bit_mask;
+            }
+        }
+    }
+    my $huxing = $page_dom->find("ul.Huxing li");
+    for my $row(@$huxing){
+        my $title = decode('gb2312', $row->at("p.type")->text);
+        $title =~ s/[\s：]//g;
+        my $content = $row->at('p.info')->text;
+        $content = decode('gb2312',$content);
+
+        given($title){
+            when('楼层'){
+                $page_info->{floor} = $content;
+            }
+            when('地址'){
+                $page_info->{address} = $content;
+            }
+            when('户型'){
+                    $page_info->{room_type} = $content;
+            }
+            when('物业类型'){
+                $page_info->{house_type} = $content;
+            }
+            when('装修'){
+                $page_info->{house_decoration} = $content;
+            }
+            when('小区'){
+                $page_info->{region_xiaoqu} = $content;
+            }
+            when('面积'){
+                my $room_space = $content;
+                if ($room_space =~ s/\s*(\d+).*/$1/) {
+                    $page_info->{room_space} = $room_space;
+                } else {
+                    $page_info->{room_space} = 0;
+                }
+            }
+        };
+    }
+
+    return $page_info;
+}
+
 
 sub grab_detail_page_58{
     my ($page_dom) = @_;
@@ -377,96 +482,6 @@ sub grab_detail_page_58{
         $peizhi_bit_mask |= PZ_nuanqi if any {$_ eq '暖气'} @peizhi_info;
     }
     $page_info->{peizhi_info} = $peizhi_bit_mask;
-
-    return $page_info;
-}
-
-sub grab_detail_page_fang{
-    my ($page_dom) = @_;
-    my $date_dom = $page_dom->at("div.houseInfo dl.title p[class]");
-    my $date = $date_dom->text if $date_dom;
-    $date =~ s<.*?(\d{4}/\d{1,2}/\d{1,2}) .*><$1>g;
-    $date = DateTime->today()->ymd unless $date;
-
-    my $page_info = {show_data=>$date,peizhi_info=>0,price=>0};
-
-    my $summary = $page_dom->find("div.info ul>li");
-
-    foreach my $row (@$summary) {
-        my $row_text = $row->text;
-
-        my $title = $1 if $row_text =~ s/(\w:)//g;
-
-        given($title){
-            when('租金'){
-                my $price = $row->at("b.basic-info-price")->text;
-                $page_info->{price} = ($price =~ m/\d+/) ? $price : 0;
-            }
-            when('楼层'){
-                my $floor = $row->child_nodes->last->content;
-                $floor =~ s/\s//g;
-                $page_info->{floor} = $floor;
-            }
-            when(''){
-                my $address = $row->at("span.addr-area")->attr('title');
-                $page_info->{address} = $address;
-            }
-            when('户型'){
-                my $house_info_str = $row->child_nodes->last->content;
-                my @house_info = split(/-/,$house_info_str);
-                my $house_type =  $house_info[0];
-                $house_type =~ s/\s//g;
-                $page_info->{room_type} = $house_type;
-                my $room_space = $house_info[2];
-                if ($room_space =~ s/\s*(\d+).*/$1/) {
-                    $page_info->{room_space} = $room_space;
-                } else {
-                    $page_info->{room_space} = 0;
-                }
-            }
-            when('概况'){
-                my $house_info_str = $row->child_nodes->last->content;
-                my @house_info = map { $_ =~ s/\s//g ; $_ } split(/-/,$house_info_str);
-                $page_info->{house_type} = $house_info[1];
-                $page_info->{house_decoration} = $house_info[2];
-            }
-            when('小区'){
-                my $xiaoqu_dom = $row->at("div>a:nth-child(1)");
-                $page_info->{region_xiaoqu} = $xiaoqu_dom ? $xiaoqu_dom->text : '';
-            }
-            when('位置'){
-                my @region = $row->find("a")->map('text')->each;
-                my $district = $region[1];
-                my $street = $region[2];
-
-                $page_info->{region_district} = $district;
-                $page_info->{region_street} = $street;
-            }
-            when('配置'){
-                my $peizhi_dom = $row->at("p");
-                my $peizhi = $peizhi_dom->all_text if $peizhi_dom ;
-                my $peizhi_bit_mask = 0;
-
-                if ($peizhi) {
-                    my @peizhi_info = split('/',$peizhi);
-
-                    $peizhi_bit_mask |= PZ_chuang if any {$_ =~ '床'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_yigui if any {$_ =~ '衣柜'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_shafa if any {$_ =~ '沙发'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_dianshi if any {$_ =~ '电视'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_bingxiang if any {$_ =~ '冰箱'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_xiyiji if any {$_ =~ '洗衣机'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_kongtiao if any {$_ =~ '空调'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_reshuiqi if any {$_ =~ '热水器'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_kuandai if any {$_ =~ '宽带'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_nuanqi if any {$_ =~ '暖气'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_meiqi if any {$_ =~ '煤气'} @peizhi_info;
-                    $peizhi_bit_mask |= PZ_jiaju if any {$_ =~ '家具'} @peizhi_info;
-                }
-                $page_info->{peizhi_info} = $peizhi_bit_mask;
-            }
-        }
-    }
 
     return $page_info;
 }
