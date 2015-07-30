@@ -25,19 +25,14 @@ BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/");push(@
 use HandyDataSource;
 use GrabSite;
 
-my $ua_ganji = Mojo::UserAgent->new;
-$ua_ganji    = $ua_ganji->connect_timeout(2)->request_timeout(3);
-my $ua_58 = Mojo::UserAgent->new;
-$ua_58    = $ua_58->connect_timeout(2)->request_timeout(3);
-my $ua_fang = Mojo::UserAgent->new;
-$ua_fang    = $ua_fang->connect_timeout(2)->request_timeout(3);
+my $ua = Mojo::UserAgent->new;
+$ua    = $ua->connect_timeout(2)->request_timeout(3);
 
-
-my $ds = Handy::DataSource->new(0);
+my $ds = Handy::DataSource->new(1);
 
 my $handy_db = DBI->connect( $ds->handy,
-                             'lust','lust',
-                             #'uoko-dev','dev-uoko',
+                             #'lust','lust',
+                             'uoko-dev','dev-uoko',
                              {
                               'mysql_enable_utf8' => 1,
                               'RaiseError' => 1,
@@ -52,8 +47,9 @@ my ($page_ganji, $page_58, $page_fang) = (1,1,1);
 my $grab_ganji = Grab::Site->new({
                                   db => $handy_db,
                                   site_source => ganji,
-                                  ua => $ua_ganji,
+                                  ua => $ua,
                                   area_list => [qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)],
+                                  #area_list => [qw(wuhou)],
                                   list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
                                   page_total => 2,
                                  });
@@ -61,7 +57,7 @@ my $grab_ganji = Grab::Site->new({
 my $grab_58 =  Grab::Site->new({
                                 db => $handy_db,
                                 site_source => f58,
-                                ua => $ua_58,
+                                ua => $ua,
                                 area_list => [qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)],
                                 list_page_url_tpl => q(http://cd.58.com/%s/zufang/pn%d/),
                                 page_total => 2,
@@ -70,20 +66,122 @@ my $grab_58 =  Grab::Site->new({
 my $grab_fang =  Grab::Site->new({
                                   db => $handy_db,
                                   site_source => fang,
-                                  ua => $ua_fang,
-                                  area_list => [qw(wohou)],
-                                  list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
+                                  ua => $ua,
+                                  area_list => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
+                                  list_page_url_tpl => q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/),
                                   page_total => 2,
                                  });
 
 
 say "ready go!";
 
-$grab_ganji->start();
-$grab_58->start();
-# $grab_fang->start();
+#$grab_ganji->start();
+#$grab_58->start();
+#$grab_fang->start();
+use enum qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi meiqi jiaju);
 
-Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+my $dom = $ua->get('http://zu.cd.fang.com/chuzu/3_164390361_1.htm')->res->dom;
+#my $dom = $ua->get('http://www.xiami.com')->res->dom;
+
+grab_detail_page_fang($dom);
+
+
+sub grab_detail_page_fang{
+    my ($page_dom) = @_;
+
+    my $date_dom = $page_dom->at("div.houseInfo dl.title p[class]");
+    my $date = $date_dom->text if $date_dom;
+    $date =~ s<.*?(\d{4}/\d{1,2}/\d{1,2}) .*><$1>g;
+    $date = DateTime->today()->ymd unless $date;
+
+
+    my $page_info = {show_data=>$date,peizhi_info=>0,price=>0};
+
+    my $summary = $page_dom->find("div.info ul>li");
+
+    foreach my $row (@$summary) {
+        my $row_text = decode('gb2312', $row->all_text);
+
+        my ($title,$content) = ();
+        if($row_text =~ m/(.+)：(.*)/g){
+            $title = $1;
+            $content = $2;
+
+            $title =~ s/[\s]//g;
+        }else{
+            next;
+        }
+
+        given($title){
+            when(/元/){
+                my $price = $title =~ m/(\d+)元/g ? $1 : 0;
+                $page_info->{price} = $price;
+            }
+            when('小区'){
+                my @region = $row->find("a")->map('text')->each;
+                my $district = $region[-2];
+                my $street = $region[-1];
+
+                $page_info->{region_district} = $district;
+                $page_info->{region_street} = $street;
+            }
+            when('/(家具家电)|(配套设施)/'){
+                my $peizhi_bit_mask = 0;
+
+                if ($content) {
+                    my @peizhi_info = split(',',$content);
+
+                    $peizhi_bit_mask |= PZ_chuang if any {$_ =~ '床'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_kuandai if any {$_ =~ '宽带'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_dianshi if any {$_ =~ '电视'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_bingxiang if any {$_ =~ '冰箱'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_xiyiji if any {$_ =~ '洗衣机'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_kongtiao if any {$_ =~ '空调'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_reshuiqi if any {$_ =~ '热水器'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_nuanqi if any {$_ =~ '暖气'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_yigui if any {$_ =~ '衣柜'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_shafa if any {$_ =~ '沙发'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_meiqi if any {$_ =~ '煤气'} @peizhi_info;
+                    $peizhi_bit_mask |= PZ_jiaju if any {$_ =~ '家具'} @peizhi_info;
+                }
+                $page_info->{peizhi_info} = $peizhi_bit_mask;
+            }
+        }
+    }
+    my $huxing = $page_dom->find("ul.Huxing li");
+    for my $row(@$huxing){
+        my $title = decode('gb2312', $row->at("p.type")->text);
+        my $content = $row->at('p.info')->text;
+        given($title){
+            when('楼层'){
+                $page_info->{floor} = $content;
+            }
+            when(''){
+
+            }
+        };
+
+
+
+    }
+
+    $page_info->{address} = $address;
+    $page_info->{room_type} = $house_type;
+    $page_info->{house_type} = $house_info[1];
+    $page_info->{house_decoration} = $house_info[2];
+    $page_info->{region_xiaoqu} = $xiaoqu_dom ? $xiaoqu_dom->text : '';
+                      my $room_space = $house_info[2];
+                if ($room_space =~ s/\s*(\d+).*/$1/) {
+                    $page_info->{room_space} = $room_space;
+                } else {
+                    $page_info->{room_space} = 0;
+                }
+
+
+    return $page_info;
+}
+
+#Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
 
 __END__
