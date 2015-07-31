@@ -51,7 +51,7 @@ my $grab_ganji = Grab::Site->new({
                                   area_list => [qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)],
                                   #area_list => [qw(wuhou)],
                                   list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
-                                  page_total => 2,
+                                  page_total => 150,
                                  });
 
 my $grab_58 =  Grab::Site->new({
@@ -60,7 +60,7 @@ my $grab_58 =  Grab::Site->new({
                                 ua => $ua,
                                 area_list => [qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)],
                                 list_page_url_tpl => q(http://cd.58.com/%s/zufang/pn%d/),
-                                page_total => 2,
+                                page_total => 70,
                                });
 
 my $grab_fang =  Grab::Site->new({
@@ -69,7 +69,7 @@ my $grab_fang =  Grab::Site->new({
                                   ua => $ua,
                                   area_list => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
                                   list_page_url_tpl => q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/),
-                                  page_total => 2,
+                                  page_total => 100,
                                  });
 
 
