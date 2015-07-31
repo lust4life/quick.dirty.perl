@@ -120,7 +120,7 @@ sub grab_page{
 
                           while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
 
-                              my $error = $error_query->{error_counts};
+                              my $error = $error_query->{error_counts} || 0;
                               # 如果 $error 越来越大,就放慢速度.
                               my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
                               my $timer_delay = $delay->begin(0);
