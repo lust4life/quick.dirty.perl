@@ -642,8 +642,8 @@ sub start{
     $delay->on(finish=>sub{
                    my $task = shift;
                    my $page_num = $self->{'page_num'};
-
-                   #say "---------------- done grab site=> $site_source, page=> $page_num ";
+                   my $timer = $self->{'timer'};
+                   say "---------------- done grab site=> $site_source, page=> $page_num, time=> $timer";
 
                    my $is_last_page = $page_num == $page_total;
                    if ($is_last_page) {
@@ -668,7 +668,6 @@ sub start{
                                            # 然后最后递归调用抓取
                                            $self->grab_page($task);
                                        });
-
                });
 
     return $delay;
