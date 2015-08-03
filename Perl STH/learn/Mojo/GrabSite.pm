@@ -19,6 +19,7 @@ use DBI qw(:sql_types);
 use utf8;
 use experimental 'smartmatch';
 
+use enum qw(f58 ganji fang);
 use enum qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi meiqi jiaju);
 use List::Util qw(any);
 
@@ -41,20 +42,10 @@ my $grab_detail_page_func = {
 sub new{
     my ($class,$info) = @_;
 
-    init($info);
-
-    bless($info,$class);
-    return $info;
-}
-
-sub init{
-    my ($self) = @_;
-    $self->{'error_query'} = {};
-    $self->{'grab_urls'} = 0;
-    $self->{'page_num'} = 1;
+    init_error_info($info);
 
     my $ua = Mojo::UserAgent->new;
-    $ua    = $ua->connect_timeout(1)->request_timeout(2);
+    $ua    = $ua->connect_timeout(2)->request_timeout(2);
 
     my $ds = Handy::DataSource->new(1);
 
@@ -68,8 +59,18 @@ sub init{
                              }
                            ) or die qq(unable to connect $Handy::DataSource::handy\n);
 
-    $self->{'db'} = $handy_db;
-    $self->{'ua'} = $ua;
+    $info->{'db'} = $handy_db;
+    $info->{'ua'} = $ua;
+    $info->{'page_num'} = 1;
+
+    bless($info,$class);
+    return $info;
+}
+
+sub init_error_info{
+    my ($self) = @_;
+    $self->{'error_query'} = {};
+    $self->{'grab_urls'} = 0;
 }
 
 sub check_firewall{
@@ -141,9 +142,16 @@ sub grab_page{
 
                           while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
 
-                              my $error = $error_query->{error_counts} || 0;
+                              #                              my $error = $error_query->{error_counts} || 0;
                               # 如果 $error 越来越大,就放慢速度.
-                              my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
+                              #                              $error = $error > 500 ? 500 : $error;
+                              #                              my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
+
+                              my $factor = 0.3;
+                              if($site_source == ganji){
+                                  $factor = 0.5;
+                              }
+                              my $delay_time = ($process_count++) * $factor;
                               my $timer_delay = $delay->begin(0);
 
                               #say "($site_source $page_index): time delay=> $delay_time, process_count=>  $process_count";
@@ -610,6 +618,7 @@ sub log_grab_info{
     my $site_source = $self->{'site_source'};
     my $time_used = $self->{'timer'};
     my $handy_db = $self->{'db'};
+    my $page = $self->{'page_num'};
 
     my $errors = $error_query->{error_counts} // 0;
 
@@ -618,6 +627,7 @@ sub log_grab_info{
                      'grab_urls' => $url_num,
                      'errors' => $errors,
                      'site_source' => $site_source,
+                     'page' => $page,
                     };
     p $grab_info;
 
@@ -638,7 +648,7 @@ VALUES
     $handy_db->do($info_sql,undef,$grab_info_json,$site_info_counts,$error_json);
 
     # 清空 error_query, grab_urls
-    init($self);
+    init_error_info($self);
 }
 
 sub start_timer{
@@ -666,12 +676,15 @@ sub start{
                    my $task = shift;
                    my $page_num = $self->{'page_num'};
                    my $timer = $self->{'timer'};
-                   say "---------------- done grab site=> $site_source, page=> $page_num, time=> $timer";
+                   my $grab_urls = $self->{'grab_urls'};
+
+                   say "---------------- done grab site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
 
                    my $is_last_page = $page_num == $page_total;
+
                    if ($is_last_page) {
-                       # 如果这是最后一页的抓取,代表全站抓取已经完成, 记录抓取信息
                        $self->log_grab_info();
+                       $self->reset_timer();
 
                        $self->{page_num} = 1;
                    } else {
@@ -679,23 +692,15 @@ sub start{
                    }
 
 
-                   my $grab_urls = $self->{'grab_urls'};
                    # 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
-                   my $next_time = $grab_urls ? 1 : 150;
+                   my $next_time = $grab_urls ? 1 : 60;
 
                    Mojo::IOLoop->timer($next_time => sub{
-                                           if($is_last_page){
-                                               $self->reset_timer()
-                                           }
-
-                                           # 然后最后递归调用抓取
                                            $self->grab_page($task);
                                        });
                });
 
     return $delay;
 }
-
-
 
 1;
