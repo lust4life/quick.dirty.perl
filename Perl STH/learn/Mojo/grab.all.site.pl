@@ -25,63 +25,51 @@ BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/");push(@
 use HandyDataSource;
 use GrabSite;
 
-my $ua_ganji = Mojo::UserAgent->new;
-$ua_ganji    = $ua_ganji->connect_timeout(2)->request_timeout(3);
-my $ua_58 = Mojo::UserAgent->new;
-$ua_58    = $ua_58->connect_timeout(2)->request_timeout(3);
-my $ua_fang = Mojo::UserAgent->new;
-$ua_fang    = $ua_fang->connect_timeout(2)->request_timeout(3);
-
-
-my $ds = Handy::DataSource->new(0);
-
-my $handy_db = DBI->connect( $ds->handy,
-                             'lust','lust',
-                             #'uoko-dev','dev-uoko',
-                             {
-                              'mysql_enable_utf8' => 1,
-                              'RaiseError' => 1,
-                              'PrintError' => 0
-                             }
-                           ) or die qq(unable to connect $Handy::DataSource::handy\n);
-
 
 my ($page_ganji, $page_58, $page_fang) = (1,1,1);
 
 
-my $grab_ganji = Grab::Site->new({
-                                  db => $handy_db,
-                                  site_source => ganji,
-                                  ua => $ua_ganji,
-                                  area_list => [qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)],
-                                  list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
-                                  page_total => 2,
-                                 });
-
-my $grab_58 =  Grab::Site->new({
-                                db => $handy_db,
-                                site_source => f58,
-                                ua => $ua_58,
-                                area_list => [qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)],
-                                list_page_url_tpl => q(http://cd.58.com/%s/zufang/pn%d/),
-                                page_total => 2,
-                               });
-
-my $grab_fang =  Grab::Site->new({
-                                  db => $handy_db,
-                                  site_source => fang,
-                                  ua => $ua_fang,
-                                  area_list => [qw(wohou)],
-                                  list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
-                                  page_total => 2,
-                                 });
-
 
 say "ready go!";
 
-$grab_ganji->start();
-$grab_58->start();
-# $grab_fang->start();
+
+my $pid_58 = fork();
+if ($pid_58) {
+
+    my $grab_58 =  Grab::Site->new({
+                                    site_source => f58,
+                                    area_list => [qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)],
+                                    list_page_url_tpl => q(http://cd.58.com/%s/zufang/pn%d/),
+                                    page_total => 70,
+                                   });
+
+    $grab_58->start();
+} else {
+    my $pid_fang = fork();
+    if ($pid_fang) {
+
+        my $grab_fang =  Grab::Site->new({
+                                          site_source => fang,
+                                          area_list => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
+                                          list_page_url_tpl => q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/),
+                                          page_total => 100,
+                                         });
+
+        $grab_fang->start();
+    } else {
+
+        my $grab_ganji = Grab::Site->new({
+                                          site_source => ganji,
+                                          area_list => [qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)],
+                                          #area_list => [qw(wuhou)],
+                                          list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
+                                          page_total => 150,
+                                         });
+
+        $grab_ganji->start();
+
+    }
+}
 
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 
