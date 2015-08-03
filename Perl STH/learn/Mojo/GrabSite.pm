@@ -22,6 +22,10 @@ use experimental 'smartmatch';
 use enum qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi meiqi jiaju);
 use List::Util qw(any);
 
+BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/");push(@INC,'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/')};
+use HandyDataSource;
+
+
 my $generate_detail_page_urls_ref_func = {
                                           '0'=> \&generate_detail_page_urls_ref_58,
                                           '1'=> \&generate_detail_page_urls_ref_ganji,
@@ -33,9 +37,6 @@ my $grab_detail_page_func = {
                              '1' => \&grab_detail_page_ganji,
                              '2' => \&grab_detail_page_fang,
                             };
-
-
-
 
 sub new{
     my ($class,$info) = @_;
@@ -51,6 +52,24 @@ sub init{
     $self->{'error_query'} = {};
     $self->{'grab_urls'} = 0;
     $self->{'page_num'} = 1;
+
+    my $ua = Mojo::UserAgent->new;
+    $ua    = $ua->connect_timeout(1)->request_timeout(2);
+
+    my $ds = Handy::DataSource->new(1);
+
+    my $handy_db = DBI->connect( $ds->handy,
+                                 #'lust','lust',
+                                 'uoko-dev','dev-uoko',
+                                 {
+                              'mysql_enable_utf8' => 1,
+                              'RaiseError' => 1,
+                              'PrintError' => 0
+                             }
+                           ) or die qq(unable to connect $Handy::DataSource::handy\n);
+
+    $self->{'db'} = $handy_db;
+    $self->{'ua'} = $ua;
 }
 
 sub check_firewall{
@@ -77,7 +96,7 @@ sub grab_page{
     my $handy_db = $self->{'db'};
 
     my $timer = $self->{'timer'};
-    #say "grab $site_source : page=> $page_index: $timer";
+
 
 
     $delay->steps(sub{
@@ -116,6 +135,8 @@ sub grab_page{
 
                       my $process_count = 1;
 
+                      #say "grab $site_source : page=> $page_index: $timer";
+
                       for my $detail_page_urls_ref (@detail_page_urls_refs) {
 
                           while (my ($puid,$detail_page_url) = each %$detail_page_urls_ref) {
@@ -124,6 +145,8 @@ sub grab_page{
                               # 如果 $error 越来越大,就放慢速度.
                               my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
                               my $timer_delay = $delay->begin(0);
+
+                              #say "($site_source $page_index): time delay=> $delay_time, process_count=>  $process_count";
 
                               Mojo::IOLoop->timer( $delay_time => sub{
                                                        $ua->max_redirects(2)->get($detail_page_url =>sub{
@@ -657,8 +680,8 @@ sub start{
 
 
                    my $grab_urls = $self->{'grab_urls'};
-                   # 如果 grab_urls 为0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
-                   my $next_time = $grab_urls || 150;
+                   # 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
+                   my $next_time = $grab_urls ? 1 : 150;
 
                    Mojo::IOLoop->timer($next_time => sub{
                                            if($is_last_page){
