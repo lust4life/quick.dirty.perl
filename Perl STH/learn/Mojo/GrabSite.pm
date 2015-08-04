@@ -102,11 +102,18 @@ sub grab_page{
 
     $delay->steps(sub{
                       my ($task) = @_;
+                      my $area_index;
                       for my $area (@$area_list) {
                           my $page_list_url = sprintf($list_page_url_tpl,$area,$page_index);
 
                           my $end = $task->begin(0);
-                          $ua->get($page_list_url => sub{
+
+
+
+                          if($site_source == ganji){
+                              my $delay_time = ($area_index++ * 1);
+                              Mojo::IOLoop->timer($delay_time => sub{
+                                                                                    $ua->get($page_list_url => sub{
                                        my ($ua, $tx) = @_;
                                        my $url = $tx->req->url->to_string;
 
@@ -129,6 +136,35 @@ sub grab_page{
                                            $end->($detail_page_urls_ref);
                                        }
                                    });
+
+                                                  });
+                          }else{
+                                                            $ua->get($page_list_url => sub{
+                                       my ($ua, $tx) = @_;
+                                       my $url = $tx->req->url->to_string;
+
+                                       my $is_firewall = check_firewall($tx,$site_source);
+                                       if ($is_firewall || $tx->res->error) {
+                                           $error_query->{error_counts}++;
+                                           my $error_info = $tx->res->error;
+                                           $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+                                           $error_query->{$url} = $error_info;
+                                           $end->();
+                                       } else {
+                                           my $list_dom = $tx->res->dom;
+
+                                           # 分析 dom
+                                           my $detail_page_urls_ref = $generate_detail_page_urls_ref_func->{$site_source}->($list_dom,$site_source);
+
+                                           # 去除处理过的 url
+                                           exclude_urls_in_db($handy_db,$detail_page_urls_ref,$site_source);
+
+                                           $end->($detail_page_urls_ref);
+                                       }
+                                   });
+
+
+                          }
                       }
                   },
                   sub{
@@ -147,9 +183,9 @@ sub grab_page{
                               #                              $error = $error > 500 ? 500 : $error;
                               #                              my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
 
-                              my $factor = 0.3;
+                              my $factor = 0.5;
                               if($site_source == ganji){
-                                  $factor = 0.5;
+                                  $factor = 1;
                               }
                               my $delay_time = ($process_count++) * $factor;
                               my $timer_delay = $delay->begin(0);
