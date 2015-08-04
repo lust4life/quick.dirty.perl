@@ -16,14 +16,31 @@ use Timer::Simple;
 
 binmode( STDOUT, ":encoding(gbk)" );
 
-my $site_root_dir = path('e:/git/lust4life/src/org/life/');
+my $site_root_dir = path('e:/git/blog.site.src/src/org/life/');
 
 my $ua = Mojo::UserAgent->new;
+$ua->cookie_jar->add(
+                     Mojo::Cookie::Response->new(
+                                                 name   => 'uin',
+                                                 value  => 'o0276805281',
+                                                 domain => '.qq.com',
+                                                 path   => '/'
+                                                )
+                    );
 
-my $g_tk = q(1871641130);
+            $ua->cookie_jar->add(
+                Mojo::Cookie::Response->new(
+                    name   => 'skey',
+                    value  => '@JuO2e9YDP',
+                    domain => '.qq.com',
+                    path   => '/'
+                )
+            );
+
+my $g_tk = q(461388752);
 
 my $query_url_fomat =
-q(http://taotao.qq.com/cgi-bin/emotion_cgi_msglist_v6?pos=%d&num=%d&code_version=1&format=json&g_tk=%s);
+        q(http://taotao.qq.com/cgi-bin/emotion_cgi_msglist_v6?pos=%d&num=%d&code_version=1&format=json&g_tk=%s);
 
 my %file_name_hash;
 
@@ -34,8 +51,8 @@ sub process_msg {
 
     # get msg with no truncate
     my $query_msg_detail_url = sprintf(
-q(http://taotao.qq.com/cgi-bin/emotion_cgi_msgdetail_v6?g_tk=%s&tid=%s&uin=276805281&not_trunc_con=1&code_version=1&format=fs),
-        $g_tk, $tid );
+                                       q(http://taotao.qq.com/cgi-bin/emotion_cgi_msgdetail_v6?g_tk=%s&tid=%s&uin=276805281&not_trunc_con=1&code_version=1&format=fs),
+                                       $g_tk, $tid );
 
     my $data_from_server = $ua->get($query_msg_detail_url)->res->body;
     my $msg              = $data->{'content'};
@@ -45,17 +62,17 @@ q(http://taotao.qq.com/cgi-bin/emotion_cgi_msgdetail_v6?g_tk=%s&tid=%s&uin=27680
     }
 
     my $msg_info = {
-        'tid'         => $tid,
-        'msg'         => $msg,
-        'create_time' => $data->{'created_time'},
-    };
+                    'tid'         => $tid,
+                    'msg'         => $msg,
+                    'create_time' => $data->{'created_time'},
+                   };
 
     my @pic = map {
         my $pic_info = $_;
         my $img      = {
-            'big'   => $pic_info->{'url2'},
-            'small' => $pic_info->{'url3'},
-        };
+                        'big'   => $pic_info->{'url2'},
+                        'small' => $pic_info->{'url3'},
+                       };
         $img;
     } @{ $data->{'pic'} };
 
@@ -74,7 +91,7 @@ sub generate_org_file {
     if ( exists $file_name_hash{$file_name} ) {
         $file_name_hash{$file_name}++;
         $file_name =
-          sprintf( "%s-%d", $file_name, $file_name_hash{$file_name} );
+                sprintf( "%s-%d", $file_name, $file_name_hash{$file_name} );
     }
 
     # 如果 file_name 存在，跳过
@@ -115,16 +132,16 @@ end_org
     for my $pic (@$pics) {
         $pic_count++;
         my $big_pic_name =
-          sprintf( "life-img/%s-%s.big.jpg", $file_name, $pic_count );
+                sprintf( "life-img/%s-%s.big.jpg", $file_name, $pic_count );
         my $small_pic_name =
-          sprintf( "life-img/%s-%s.small.jpg", $file_name, $pic_count );
+                sprintf( "life-img/%s-%s.small.jpg", $file_name, $pic_count );
         $ua->get( $pic->{'big'} )
-          ->res->content->asset->move_to("E:/git/lust4life/life/$big_pic_name");
+                ->res->content->asset->move_to("E:/git/lust4life/life/$big_pic_name");
         $ua->get( $pic->{'small'} )
-          ->res->content->asset->move_to(
-            "E:/git/lust4life/life/$small_pic_name");
+                ->res->content->asset->move_to(
+                                               "E:/git/lust4life/life/$small_pic_name");
         $pic_html .= sprintf( q(<li><a href="%s"><img src="%s"></a></li>),
-            $big_pic_name, $small_pic_name );
+                              $big_pic_name, $small_pic_name );
     }
 
     if ($pic_html) {
@@ -138,7 +155,7 @@ end_org
     }
 
     $org_content =
-      sprintf( $org_content, $title, $create_date, $words, $pic_html );
+            sprintf( $org_content, $title, $create_date, $words, $pic_html );
 
     $file_path_obj->touch->spew_utf8($org_content);
 }
@@ -146,46 +163,31 @@ end_org
 my $time_used = Timer::Simple->new();
 
 Mojo::IOLoop->delay(
-    sub {
-        my ($delay) = shift;
-        my $page_num = 40;
-        for my $page ( 0 .. 15 ) {
-            my $start_index = $page * $page_num;
-            my $query_url =
-              sprintf( $query_url_fomat, $start_index, $page_num, $g_tk );
-            $ua->cookie_jar->add(
-                Mojo::Cookie::Response->new(
-                    name   => 'skey',
-                    value  => '@8kkVeIQOS',
-                    domain => '.qq.com',
-                    path   => '/'
-                )
-            );
-            $ua->cookie_jar->add(
-                Mojo::Cookie::Response->new(
-                    name   => 'uin',
-                    value  => 'o0276805281',
-                    domain => '.qq.com',
-                    path   => '/'
-                )
-            );
-            $ua->get( $query_url => $delay->begin );
-        }
-    },
-    sub {
-        my ( $delay, @data_from_server ) = @_;
+                    sub {
+                        my ($delay) = shift;
+                        my $page_num = 40;
+                        for my $page ( 0 .. 15 ) {
+                            my $start_index = $page * $page_num;
+                            my $query_url =
+                                    sprintf( $query_url_fomat, $start_index, $page_num, $g_tk );
+                            say $query_url;
+                            $ua->get( $query_url => $delay->begin );
+                        }
+                    },
+                    sub {
+                        my ( $delay, @data_from_server ) = @_;
 
-        my @msg_infos = map {
-            my $tx       = $_;
-            my $msg_list = $tx->res->json('/msglist/');
-            say "no msg data from server" unless $msg_list;
-            map { process_msg($_) } @{$msg_list};
-        } @data_from_server;
+                        my @msg_infos = map {
+                            my $tx       = $_;
+                            my $msg_list = $tx->res->json('/msglist/');
+                            say "no msg data from server" unless $msg_list;
+                            map { process_msg($_) } @{$msg_list};
+                        } @data_from_server;
 
-        # 将 msg_infos 处理成 org file 进行保存
-        map { generate_org_file($_) } @msg_infos;
-        say "\n\ndone!\n";
-    }
-)->wait;
+                        # 将 msg_infos 处理成 org file 进行保存
+                        map { generate_org_file($_) } @msg_infos;
+                        say "\n\ndone!\n";
+                    }
+                   )->wait;
 
 say "all took: $time_used";
