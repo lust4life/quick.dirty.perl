@@ -45,7 +45,7 @@ sub new{
     init_error_info($info);
 
     my $ua = Mojo::UserAgent->new;
-    $ua    = $ua->connect_timeout(2)->request_timeout(2);
+    $ua    = $ua->connect_timeout(2)->request_timeout(2)->max_redirects(2);
 
     my $ds = Handy::DataSource->new(1);
 
@@ -53,11 +53,11 @@ sub new{
                                  #'lust','lust',
                                  'uoko-dev','dev-uoko',
                                  {
-                              'mysql_enable_utf8' => 1,
-                              'RaiseError' => 1,
-                              'PrintError' => 0
-                             }
-                           ) or die qq(unable to connect $Handy::DataSource::handy\n);
+                                  'mysql_enable_utf8' => 1,
+                                  'RaiseError' => 1,
+                                  'PrintError' => 0
+                                 }
+                               ) or die qq(unable to connect $Handy::DataSource::handy\n);
 
     $info->{'db'} = $handy_db;
     $info->{'ua'} = $ua;
@@ -78,7 +78,6 @@ sub check_firewall{
 
     my $url = $tx->req->url->to_string;
     my $is_firewall = ($url =~ m/firewall/) || ($url =~ m/confirm/);
-
 
     return $is_firewall;
 }
@@ -110,58 +109,58 @@ sub grab_page{
 
 
 
-                          if($site_source == ganji){
+                          if ($site_source == ganji) {
                               my $delay_time = ($area_index++ * 1);
                               Mojo::IOLoop->timer($delay_time => sub{
-                                                                                    $ua->get($page_list_url => sub{
-                                       my ($ua, $tx) = @_;
-                                       my $url = $tx->req->url->to_string;
+                                                      $ua->get($page_list_url => sub{
+                                                                   my ($ua, $tx) = @_;
+                                                                   my $url = $tx->req->url->to_string;
 
-                                       my $is_firewall = check_firewall($tx,$site_source);
-                                       if ($is_firewall || $tx->res->error) {
-                                           $error_query->{error_counts}++;
-                                           my $error_info = $tx->res->error;
-                                           $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
-                                           $error_query->{$url} = $error_info;
-                                           $end->();
-                                       } else {
-                                           my $list_dom = $tx->res->dom;
+                                                                   my $is_firewall = check_firewall($tx,$site_source);
+                                                                   if ($is_firewall || $tx->res->error) {
+                                                                       $error_query->{error_counts}++;
+                                                                       my $error_info = $tx->res->error;
+                                                                       $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+                                                                       $error_query->{$url} = $error_info;
+                                                                       $end->();
+                                                                   } else {
+                                                                       my $list_dom = $tx->res->dom;
 
-                                           # 分析 dom
-                                           my $detail_page_urls_ref = $generate_detail_page_urls_ref_func->{$site_source}->($list_dom,$site_source);
+                                                                       # 分析 dom
+                                                                       my $detail_page_urls_ref = $generate_detail_page_urls_ref_func->{$site_source}->($list_dom,$site_source);
 
-                                           # 去除处理过的 url
-                                           exclude_urls_in_db($handy_db,$detail_page_urls_ref,$site_source);
+                                                                       # 去除处理过的 url
+                                                                       exclude_urls_in_db($handy_db,$detail_page_urls_ref,$site_source);
 
-                                           $end->($detail_page_urls_ref);
-                                       }
-                                   });
+                                                                       $end->($detail_page_urls_ref);
+                                                                   }
+                                                               });
 
                                                   });
-                          }else{
-                                                            $ua->get($page_list_url => sub{
-                                       my ($ua, $tx) = @_;
-                                       my $url = $tx->req->url->to_string;
+                          } else {
+                              $ua->get($page_list_url => sub{
+                                           my ($ua, $tx) = @_;
+                                           my $url = $tx->req->url->to_string;
 
-                                       my $is_firewall = check_firewall($tx,$site_source);
-                                       if ($is_firewall || $tx->res->error) {
-                                           $error_query->{error_counts}++;
-                                           my $error_info = $tx->res->error;
-                                           $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
-                                           $error_query->{$url} = $error_info;
-                                           $end->();
-                                       } else {
-                                           my $list_dom = $tx->res->dom;
+                                           my $is_firewall = check_firewall($tx,$site_source);
+                                           if ($is_firewall || $tx->res->error) {
+                                               $error_query->{error_counts}++;
+                                               my $error_info = $tx->res->error;
+                                               $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+                                               $error_query->{$url} = $error_info;
+                                               $end->();
+                                           } else {
+                                               my $list_dom = $tx->res->dom;
 
-                                           # 分析 dom
-                                           my $detail_page_urls_ref = $generate_detail_page_urls_ref_func->{$site_source}->($list_dom,$site_source);
+                                               # 分析 dom
+                                               my $detail_page_urls_ref = $generate_detail_page_urls_ref_func->{$site_source}->($list_dom,$site_source);
 
-                                           # 去除处理过的 url
-                                           exclude_urls_in_db($handy_db,$detail_page_urls_ref,$site_source);
+                                               # 去除处理过的 url
+                                               exclude_urls_in_db($handy_db,$detail_page_urls_ref,$site_source);
 
-                                           $end->($detail_page_urls_ref);
-                                       }
-                                   });
+                                               $end->($detail_page_urls_ref);
+                                           }
+                                       });
 
 
                           }
@@ -184,7 +183,7 @@ sub grab_page{
                               #                              my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
 
                               my $factor = 0.5;
-                              if($site_source == ganji){
+                              if ($site_source == ganji) {
                                   $factor = 1;
                               }
                               my $delay_time = ($process_count++) * $factor;
@@ -193,7 +192,7 @@ sub grab_page{
                               #say "($site_source $page_index): time delay=> $delay_time, process_count=>  $process_count";
 
                               Mojo::IOLoop->timer( $delay_time => sub{
-                                                       $ua->max_redirects(2)->get($detail_page_url =>sub{
+                                                       $ua->get($detail_page_url =>sub{
                                                                                       my ($ua,$result) = @_;
                                                                                       ++($self->{'grab_urls'});
                                                                                       process_detail_result($result,$puid,$error_query,$handy_db,$site_source);
@@ -229,14 +228,14 @@ sub generate_detail_page_urls_ref_fang{
 
     my %detail_page_urls;
     my $tr_doms = $page_list_dom->find("dl[id^=rentid_]>dd>p.title>a")->each(sub{
-                                                                  my ($dom) = @_;
-                                                                  my $href = $dom->attr('href');
-                                                                  my $puid = $1 if $href =~ m/\d_(\d+)_\d\.htm/;
-                                                                  if($puid){
-                                                                      my $url = "http://zu.cd.fang.com/$href";
-                                                                      $detail_page_urls{$puid} = $url;
-                                                                  }
-                                                              });
+                                                                                 my ($dom) = @_;
+                                                                                 my $href = $dom->attr('href');
+                                                                                 my $puid = $1 if $href =~ m/\d_(\d+)_\d\.htm/;
+                                                                                 if ($puid) {
+                                                                                     my $url = "http://zu.cd.fang.com/$href";
+                                                                                     $detail_page_urls{$puid} = $url;
+                                                                                 }
+                                                                             });
     my $page_urls_ref = \%detail_page_urls;
 
     return $page_urls_ref;
@@ -353,8 +352,7 @@ sub process_detail_result{
         return;
     }
 
-    my $body = decode('utf8',$result->res->body);
-    my $page_deleted = 0;   #($body =~ m/你要找的页面不在这个星球上/);
+    my $page_deleted = check_page_remove($result->res);
     if ($page_deleted) {
         return;
     }
@@ -394,12 +392,12 @@ sub grab_detail_page_fang{
         my $row_text = decode('gb2312', $row->all_text);
 
         my ($title,$content) = ();
-        if($row_text =~ m/(.+)：?(.*)/g){
+        if ($row_text =~ m/(.+)：?(.*)/g) {
             $title = $1;
             $content = $2;
 
             $title =~ s/[\s]//g;
-        }else{
+        } else {
             $title = $row_text;
         }
 
@@ -441,7 +439,7 @@ sub grab_detail_page_fang{
         }
     }
     my $huxing = $page_dom->find("ul.Huxing li");
-    for my $row(@$huxing){
+    for my $row (@$huxing) {
         my $title = decode('gb2312', $row->at("p.type")->text);
         $title =~ s/[\s：]//g;
         my $content = $row->at('p.info')->text;
@@ -455,7 +453,7 @@ sub grab_detail_page_fang{
                 $page_info->{address} = $content;
             }
             when('户型'){
-                    $page_info->{room_type} = $content;
+                $page_info->{room_type} = $content;
             }
             when('物业类型'){
                 $page_info->{house_type} = $content;
@@ -474,7 +472,8 @@ sub grab_detail_page_fang{
                     $page_info->{room_space} = 0;
                 }
             }
-        };
+        }
+        ;
     }
 
     return $page_info;
@@ -685,6 +684,87 @@ VALUES
 
     # 清空 error_query, grab_urls
     init_error_info($self);
+}
+
+
+sub detection_is_remove_from_site{
+    my ($self) = @_;
+
+    $self->start_timer();
+    my $site_source = $self->{'site_source'};
+    my $handy_db = $self->{'db'};
+    my $ua = $self->{'ua'};
+    my $time = $self->{'timer'};
+
+    my $url_sql = qq{
+SELECT
+  b.`id`,
+  b.`url`
+FROM
+  grab_site_info b
+WHERE b.`site_source` = $site_source
+  AND b.remove_from_site = 0
+;
+};
+
+    my $urls_need_to_check = $handy_db->selectall_arrayref($url_sql,{Slice=>{}});
+    my $total = @$urls_need_to_check;
+    my $index = 0;
+
+    for my $url_ref (@$urls_need_to_check) {
+        $index++;
+
+        if ($index % 20 == 0) {
+            say "$site_source => $index / $total : $time";
+            sleep(5);
+        }
+
+        my $uuid = $url_ref->{'id'};
+        my $url = $url_ref->{'url'};
+
+        my $tx = $ua->get($url);
+        my $is_firewall = check_firewall($tx,$site_source);
+        if ($is_firewall) {
+            say "$site_source => firewall";
+            next;
+        }
+
+        my $is_removed =check_page_remove($tx->res);
+        if ($is_removed) {
+            $handy_db->do("UPDATE grab_site_info b SET b.remove_from_site = 1 WHERE b.`id` = ?",undef, $uuid);
+        }
+    }
+
+    say "detection_is_remove_from_site done: $time";
+    $self->reset_timer();
+}
+
+sub check_page_remove{
+    my ($res) = @_;
+    my $is_removed = 0;
+
+    my $ganji_title = $res->dom->at('title') || '';
+    $ganji_title =~ m/您访问的网页不存在/g;
+    if ($ganji_title =~ m/您访问的网页不存在/g) {
+        $is_removed = 1;
+    }
+
+    my $site_fang_none_dom = $res->dom->at('div.searchnone-txt');
+    if ($site_fang_none_dom) {
+        my $txt = $site_fang_none_dom->all_text;
+        $txt = decode('gb2312',$txt);
+        if ($txt =~ m/该房源不存在/g) {
+            $is_removed = 1;
+        }
+    }
+
+    my $site_58_body = $res->body;
+    $site_58_body = decode('utf8',$site_58_body);
+    if ($site_58_body =~ m/你要找的页面不在这个星球上/g) {
+        $is_removed = 1;
+    }
+    return $is_removed;
+
 }
 
 sub start_timer{
