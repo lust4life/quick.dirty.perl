@@ -78,7 +78,7 @@ sub check_firewall{
 
     my $url = $tx->req->url->to_string;
     my $is_firewall = ($url =~ m/firewall/) || ($url =~ m/confirm/);
-
+    say "$site_source => firewall" if $is_firewall;
     return $is_firewall;
 }
 
@@ -704,6 +704,7 @@ FROM
   grab_site_info b
 WHERE b.`site_source` = $site_source
   AND b.remove_from_site = 0
+  order by id desc
 ;
 };
 
@@ -714,9 +715,9 @@ WHERE b.`site_source` = $site_source
     for my $url_ref (@$urls_need_to_check) {
         $index++;
 
-        if ($index % 20 == 0) {
+        if ($index % 5 == 0) {
             say "$site_source => $index / $total : $time";
-            sleep(5);
+            sleep(1.5);
         }
 
         my $uuid = $url_ref->{'id'};
@@ -725,7 +726,7 @@ WHERE b.`site_source` = $site_source
         my $tx = $ua->get($url);
         my $is_firewall = check_firewall($tx,$site_source);
         if ($is_firewall) {
-            say "$site_source => firewall";
+            sleep(5);
             next;
         }
 
@@ -744,7 +745,6 @@ sub check_page_remove{
     my $is_removed = 0;
 
     my $ganji_title = $res->dom->at('title') || '';
-    $ganji_title =~ m/您访问的网页不存在/g;
     if ($ganji_title =~ m/您访问的网页不存在/g) {
         $is_removed = 1;
     }
