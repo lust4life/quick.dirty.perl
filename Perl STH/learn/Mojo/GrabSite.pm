@@ -18,6 +18,7 @@ use Try::Tiny;
 use DBI qw(:sql_types);
 use utf8;
 use experimental 'smartmatch';
+use Time::HiRes;
 
 use enum qw(f58 ganji fang);
 use enum
@@ -779,6 +780,7 @@ FROM
   $table_name b
 WHERE b.`site_source` = $site_source
   AND b.remove_from_site = 0
+  AND b.`check_remove_time` <= DATE_ADD(CURRENT_DATE(),INTERVAL -1 WEEK)
   order by id desc
 ;
 };
@@ -793,7 +795,7 @@ WHERE b.`site_source` = $site_source
 
         if ( $index % 5 == 0 ) {
             say "$site_source => $index / $total : $time";
-            sleep(1.5);
+            Time::HiRes::sleep (0.4);
         }
 
         my $uuid = $url_ref->{'id'};
@@ -802,17 +804,13 @@ WHERE b.`site_source` = $site_source
         my $tx = $ua->get($url);
         my $is_firewall = check_firewall( $tx, $site_source );
         if ($is_firewall) {
-            sleep(5);
+            Time::HiRes::sleep (5);
             next;
         }
 
         my $is_removed = check_page_remove( $tx->res );
-        if ($is_removed) {
-            $handy_db->do(
-"UPDATE $table_name b SET b.remove_from_site = 1 WHERE b.`id` = ?",
-                undef, $uuid
-            );
-        }
+
+        $handy_db->do("UPDATE $table_name b SET b.remove_from_site = ? ,b.`check_remove_time` = CURRENT_DATE() WHERE b.`id` = ?",undef, $is_removed, $uuid);
     }
 
     say "detection_is_remove_from_site done: $time";
@@ -873,7 +871,7 @@ sub start {
             my $page_num  = $self->{'page_num'};
             my $timer     = $self->{'timer'};
             my $grab_urls = $self->{'grab_urls'};
-            my $city => $self->['city'];
+            my $city      = $self->{'city'};
 
             say
 "---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";

@@ -34,6 +34,14 @@ if ($pid_58) {
 
     my $grab_58 =  Grab::Site->new({
                                     site_source => f58,
+                                    city => 'cd',
+                                   });
+
+    $grab_58->detection_is_remove_from_site();
+
+    $grab_58 =  Grab::Site->new({
+                                    site_source => f58,
+                                    city => 'hz',
                                    });
 
     $grab_58->detection_is_remove_from_site();
@@ -45,7 +53,9 @@ if ($pid_58) {
 
         my $grab_fang =  Grab::Site->new({
                                           site_source => fang,
+                                          city => 'cd',
                                          });
+
 
         $grab_fang->detection_is_remove_from_site();
 
@@ -53,9 +63,8 @@ if ($pid_58) {
 
         my $grab_ganji = Grab::Site->new({
                                           site_source => ganji,
+                                          city => 'cd',
                                          });
-
-
 
         $grab_ganji->detection_is_remove_from_site();
     }
