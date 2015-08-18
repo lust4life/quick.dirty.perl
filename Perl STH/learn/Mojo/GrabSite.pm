@@ -97,7 +97,7 @@ sub check_firewall {
 
     if($is_firewall && !$from_change_proxy){
         say "$site_source => firewall";
-        $url = url_decode($url);
+        $url = uri_unescape($url);
         $url =~ s<=(http://.*)$><$1>g;
         say $url;
         change_proxy($url,$site_source);
