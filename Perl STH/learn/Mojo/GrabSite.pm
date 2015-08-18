@@ -52,13 +52,16 @@ my $rent_type_hash = {
 my @proxy_urls = ('http://103.27.24.236:843','http://112.93.114.49:80');
 my $ua;
 
+sub init_mojo{
+    $ua = Mojo::UserAgent->new;
+    $ua = $ua->connect_timeout(2)->request_timeout(2)->max_redirects(2);
+}
+
 sub new {
     my ( $class, $info ) = @_;
 
     init_error_info($info);
-
-    $ua = Mojo::UserAgent->new;
-    $ua = $ua->connect_timeout(2)->request_timeout(2)->max_redirects(2);
+    init_mojo();
 
     my $ds = Handy::DataSource->new(1);
 
@@ -98,8 +101,7 @@ sub check_firewall {
     if($is_firewall && !$from_change_proxy){
         say "$site_source => firewall";
         $url = uri_unescape($url);
-        $url =~ s<=(http://.*)$><$1>g;
-        say $url;
+        $url =~ s!.*?=(http://.*)!$1!g;
         change_proxy($url,$site_source);
     }
 
@@ -124,7 +126,7 @@ sub change_proxy{
     if($proxy_set_ok){
         say "$site_source => firewall --------- relieve";
     }else{
-        $ua->proxy(0);
+        init_mojo();
     }
 }
 
