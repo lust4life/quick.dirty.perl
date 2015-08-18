@@ -31,6 +31,11 @@ my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
 
 say "ready go!";
 
+# my $ua = Mojo::UserAgent->new;
+#     $ua = $ua->connect_timeout(2)->request_timeout(2)->max_redirects(2);
+# $ua->proxy->http('http://103.27.24.236:843');
+# say $ua->get('http://cd.ganji.com')->res->dom->at('title')->text;
+
 my $pid_58 = fork();
 if ($pid_58) {
 

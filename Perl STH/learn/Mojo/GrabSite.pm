@@ -19,7 +19,7 @@ use DBI qw(:sql_types);
 use utf8;
 use experimental 'smartmatch';
 use Time::HiRes;
-
+use URI::Escape;
 use enum qw(f58 ganji fang);
 use enum
   qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi meiqi jiaju);
@@ -49,12 +49,15 @@ my $rent_type_hash = {
     '隔断' => 3,
 };
 
+my @proxy_urls = ('http://103.27.24.236:843','http://112.93.114.49:80');
+my $ua;
+
 sub new {
     my ( $class, $info ) = @_;
 
     init_error_info($info);
 
-    my $ua = Mojo::UserAgent->new;
+    $ua = Mojo::UserAgent->new;
     $ua = $ua->connect_timeout(2)->request_timeout(2)->max_redirects(2);
 
     my $ds = Handy::DataSource->new(1);
@@ -73,7 +76,6 @@ sub new {
     ) or die qq(unable to connect $Handy::DataSource::handy\n);
 
     $info->{'db'}       = $handy_db;
-    $info->{'ua'}       = $ua;
     $info->{'page_num'} = 1;
     $info->{'city'}     = $info->{'city'};
 
@@ -88,20 +90,50 @@ sub init_error_info {
 }
 
 sub check_firewall {
-    my ( $tx, $site_source ) = @_;
+    my ($tx, $site_source,$from_change_proxy) = @_;
 
     my $url = $tx->req->url->to_string;
     my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
-    say "$site_source => firewall" if $is_firewall;
+
+    if($is_firewall && !$from_change_proxy){
+        say "$site_source => firewall";
+        $url = url_decode($url);
+        $url =~ s<=(http://.*)$><$1>g;
+        say $url;
+        change_proxy($url,$site_source);
+    }
+
     return $is_firewall;
 }
+
+sub change_proxy{
+    my ($url,$site_source) = @_;
+    my $proxy_set_ok = 0;
+    for my $proxy_url(@proxy_urls){
+        $ua->proxy->http($proxy_url);
+
+        my $tx =$ua->get($url);
+
+        my $is_firewall = check_firewall($tx,$site_source,1);
+        if(!$is_firewall){
+            $proxy_set_ok = 1;
+            last;
+        }
+    }
+
+    if($proxy_set_ok){
+        say "$site_source => firewall --------- relieve";
+    }else{
+        $ua->proxy(0);
+    }
+}
+
 
 # 抓取一页数据
 sub grab_page {
     my ( $self, $delay ) = @_;
 
     my $page_index   = $self->{'page_num'};
-    my $ua           = $self->{'ua'};
     my $error_query  = $self->{'error_query'};
     my $area_list    = $self->{'area_list'};
     my $url_tpl_hash = $self->{'url_tpl_hash'};
@@ -766,7 +798,6 @@ sub detection_is_remove_from_site {
     $self->start_timer();
     my $site_source = $self->{'site_source'};
     my $handy_db    = $self->{'db'};
-    my $ua          = $self->{'ua'};
     my $time        = $self->{'timer'};
 
     my $city       = $self->{'city'};
