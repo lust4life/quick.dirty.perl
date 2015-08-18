@@ -25,10 +25,6 @@ use enum
   qw(BITMASK:PZ_ chuang yigui shafa dianshi bingxiang xiyiji kongtiao reshuiqi kuandai nuanqi meiqi jiaju);
 use List::Util qw(any);
 
-BEGIN {
-    push( @INC, "e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/" );
-    push( @INC, 'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/' );
-}
 use HandyDataSource;
 
 my $generate_detail_page_urls_ref_func = {
@@ -63,6 +59,8 @@ sub new {
 
     init_error_info($info);
     init_mojo();
+    my $rand = int(rand(scalar(@proxy_urls)));
+    $ua->proxy->http($proxy_urls[$rand]);
 
     my $ds = Handy::DataSource->new(1);
 

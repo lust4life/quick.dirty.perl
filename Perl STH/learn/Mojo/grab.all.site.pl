@@ -20,11 +20,6 @@ use experimental 'smartmatch';
 use enum qw(f58 ganji fang);
 use List::Util qw(any);
 
-BEGIN {
-    push( @INC, "e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/" );
-    push( @INC, 'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/' );
-}
-use HandyDataSource;
 use GrabSite;
 
 my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
