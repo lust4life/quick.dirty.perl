@@ -49,7 +49,8 @@ my $rent_type_hash = {
     '隔断' => 3,
 };
 
-my @proxy_urls = ('http://103.27.24.236:843','http://112.93.114.49:80');
+my @proxy_urls = ('http://103.27.24.236:843','http://112.93.114.49:80','http://39.166.108.254:8123','http://39.178.246.122:8123');
+
 my $ua;
 
 sub init_mojo{
@@ -99,7 +100,6 @@ sub check_firewall {
     my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
 
     if($is_firewall && !$from_change_proxy){
-        say "$site_source => firewall";
         $url = uri_unescape($url);
         $url =~ s!.*?=(http://.*)!$1!g;
         change_proxy($url,$site_source);
@@ -119,14 +119,16 @@ sub change_proxy{
         my $is_firewall = check_firewall($tx,$site_source,1);
         if(!$is_firewall){
             $proxy_set_ok = 1;
+            say "$site_source => firewall --------- $proxy_url";
             last;
         }
     }
 
     if($proxy_set_ok){
-        say "$site_source => firewall --------- relieve";
+
     }else{
         init_mojo();
+        say "$site_source => firewall , proxy all faild";
     }
 }
 
