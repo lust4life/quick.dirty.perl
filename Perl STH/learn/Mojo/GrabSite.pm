@@ -51,7 +51,7 @@ my $ua;
 
 sub init_mojo{
     $ua = Mojo::UserAgent->new;
-    $ua = $ua->connect_timeout(3)->request_timeout(4)->max_redirects(2);
+    $ua = $ua->connect_timeout(1)->request_timeout(3)->max_redirects(2);
 }
 
 sub new {
@@ -922,6 +922,7 @@ sub get_proxy_urls{
                                                                                  }
                                                                              }
                                                                          });
+                                say $page;
                             });
     }
 
