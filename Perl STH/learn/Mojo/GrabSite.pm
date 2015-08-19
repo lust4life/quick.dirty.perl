@@ -961,6 +961,7 @@ sub start {
             my $grab_urls = $self->{'grab_urls'};
             my $city      = $self->{'city'};
 
+
             say
 "---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
 
@@ -976,7 +977,11 @@ sub start {
                 $self->{page_num}++;
             }
 
-# 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
+            if(DateTime->now->hour == 23){
+                exit;
+            }
+
+            # 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
             my $next_time = $grab_urls ? 1 : 60;
 
             Mojo::IOLoop->timer(
