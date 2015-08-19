@@ -59,11 +59,13 @@ sub new {
 
     init_error_info($info);
     init_mojo();
-    $proxy_urls = $info->{$proxy_urls};
-    my $url_num = scalar(@$proxy_urls);
-    p $url_num;
-    my $rand = int(rand($url_num));
-    $ua->proxy->http($proxy_urls->[$rand]);
+    $proxy_urls = $info->{proxy_urls};
+    if($proxy_urls){
+        my $url_num = scalar(@$proxy_urls);
+        p $url_num;
+        my $rand = int(rand($url_num));
+        $ua->proxy->http($proxy_urls->[$rand]);
+    }
 
     my $ds = Handy::DataSource->new(1);
 
@@ -111,6 +113,10 @@ sub check_firewall {
 
 sub change_proxy{
     my ($url,$site_source) = @_;
+    if(!$proxy_urls){
+        return;
+    }
+
     my $proxy_set_ok = 0;
     for my $proxy_url(@$proxy_urls){
         $ua->proxy->http($proxy_url);
@@ -816,7 +822,7 @@ FROM
   $table_name b
 WHERE b.`site_source` = $site_source
   AND b.remove_from_site = 0
-  AND b.`check_remove_time` <= DATE_ADD(CURRENT_DATE(),INTERVAL -1 WEEK)
+  AND b.`check_remove_time` < DATE_ADD(CURRENT_DATE(),INTERVAL -1 DAY)
   order by id desc
 ;
 };
