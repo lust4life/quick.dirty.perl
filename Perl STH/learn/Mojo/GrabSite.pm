@@ -45,7 +45,7 @@ my $rent_type_hash = {
     '隔断' => 3,
 };
 
-my @proxy_urls = ('http://103.27.24.236:843','http://112.93.114.49:80','http://39.166.108.254:8123','http://39.178.246.122:8123');
+my $proxy_urls;
 
 my $ua;
 
@@ -59,8 +59,11 @@ sub new {
 
     init_error_info($info);
     init_mojo();
-    my $rand = int(rand(scalar(@proxy_urls)));
-    $ua->proxy->http($proxy_urls[$rand]);
+    $proxy_urls = $info->{$proxy_urls};
+    my $url_num = scalar(@$proxy_urls);
+    p $url_num;
+    my $rand = int(rand($url_num));
+    $ua->proxy->http($proxy_urls->[$rand]);
 
     my $ds = Handy::DataSource->new(1);
 
@@ -109,7 +112,7 @@ sub check_firewall {
 sub change_proxy{
     my ($url,$site_source) = @_;
     my $proxy_set_ok = 0;
-    for my $proxy_url(@proxy_urls){
+    for my $proxy_url(@$proxy_urls){
         $ua->proxy->http($proxy_url);
 
         my $tx =$ua->get($url);
@@ -877,6 +880,52 @@ sub check_page_remove {
 
 }
 
+sub get_proxy_urls{
+
+    my $ua = init_mojo();
+
+    my $url_hash =();
+    my @test_urls = ('http://cd.58.com/zufang/','http://hz.58.com/hezu/','http://cd.ganji.com/fang1/m1/','http://zu.cd.fang.com/house/n31/');
+
+    for (1..10) {
+        my $page = $_;
+        my $delay_time = $page;
+
+        Mojo::IOLoop->timer($delay_time => sub{
+                                my ($delay) = @_;
+                                my $res = $ua->get("http://www.proxy-ip.cn/other/1/$page")->res;
+                                my $dom = $res->dom;
+                                $dom->find('table.proxy_table tr')->each(sub{
+                                                                             my ($tr) = @_;
+                                                                             my $tds = $tr->find('td')->map('text')->to_array;
+                                                                             my ($ip,$port,$location,$type) = @$tds[0,1,2,4];
+
+                                                                             if ($location =~ m/中国/g && $type =~ m/高匿/g) {
+                                                                                 my $url = qq(http://$ip:$port);
+                                                                                 my $url_is_ok = 1;
+                                                                                 for my $test_url (@test_urls) {
+                                                                                     my $error = $ua->get($test_url)->res->error;
+                                                                                     if ($error) {
+                                                                                         p $error;
+                                                                                         $url_is_ok = 0;
+                                                                                     }
+                                                                                 }
+
+                                                                                 if ($url_is_ok) {
+                                                                                     $url_hash->{$url} = 1;
+                                                                                 }
+                                                                             }
+                                                                         });
+                            });
+    }
+
+    Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+    return [keys %$url_hash];
+}
+
+
+
 sub start_timer {
     my ($self) = @_;
     my $time_used = Timer::Simple->new();
@@ -934,5 +983,7 @@ sub start {
 
     return $delay;
 }
+
+
 
 1;
