@@ -3,10 +3,12 @@ use strict;
 use warnings;
 use diagnostics;
 
-use Mojo::UserAgent;
-use Data::Printer colored => 1;
-use Encode;
-
+use Path::Tiny;
 use DateTime;
 
-say "hello\t =>\t" . DateTime->now;
+my $log = path('corn.log');
+
+my $msg = "hello\t =>\t" . DateTime->now ."\n";
+say $msg;
+
+$log->append($msg);
