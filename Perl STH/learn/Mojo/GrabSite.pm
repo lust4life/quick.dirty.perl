@@ -96,47 +96,63 @@ sub init_error_info {
     $self->{'grab_urls'}   = 0;
 }
 
-sub check_firewall {
-    my ($tx, $site_source,$from_change_proxy) = @_;
+sub check_req_error {
+    my ($self,$tx,$no_change_proxy) = @_;
 
-    my $url = $tx->req->url->to_string;
-    my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
+    my $error_info = $tx->res->error;
 
-    if($is_firewall && !$from_change_proxy){
-        $url = uri_unescape($url);
-        $url =~ s!.*?=(http://.*)!$1!g;
-        change_proxy($url,$site_source);
+    if(!$error_info){
+        my $url = $tx->req->url->to_string;
+        my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
+
+        if($is_firewall){
+            $error_info->{'exception'} = '反爬虫，访问过快';
+
+            if(!$no_change_proxy){
+                $url = uri_unescape($url);
+                $url =~ s!.*?=(http://.*)!$1!g;
+                my $proxy_set_ok = $self->change_proxy($url);
+
+                if(!$proxy_set_ok){
+                    $error_info->{'exception'} = '爬虫代理切换失败';
+                }else{
+                    undef $error_info;
+                }
+            }
+        }
     }
 
-    return $is_firewall;
+    return $error_info;
 }
 
 sub change_proxy{
-    my ($url,$site_source) = @_;
-    if(!$proxy_urls){
-        return;
-    }
+    my ($self,$test_url) = @_;
 
     my $proxy_set_ok = 0;
+
+    if(!$proxy_urls){
+        return $proxy_set_ok;
+    }
+
+
     for my $proxy_url(@$proxy_urls){
         $ua->proxy->http($proxy_url);
 
-        my $tx =$ua->get($url);
+        my $tx =$ua->get($test_url);
 
-        my $is_firewall = check_firewall($tx,$site_source,1);
-        if(!$is_firewall){
+        my $error_info = $self->check_req_error($tx,1);
+        if(!$error_info){
             $proxy_set_ok = 1;
-            say "$site_source => firewall --------- $proxy_url";
+            say "$test_url => firewall --------- $proxy_url";
             last;
         }
     }
 
-    if($proxy_set_ok){
-
-    }else{
+    if(!$proxy_set_ok){
         init_mojo();
-        say "$site_source => firewall , proxy all faild";
     }
+
+    return $proxy_set_ok;
 }
 
 
@@ -145,12 +161,10 @@ sub grab_page {
     my ( $self, $delay ) = @_;
 
     my $page_index   = $self->{'page_num'};
-    my $error_query  = $self->{'error_query'};
     my $area_list    = $self->{'area_list'};
     my $url_tpl_hash = $self->{'url_tpl_hash'};
     my $site_source  = $self->{'site_source'};
-    my $handy_db     = $self->{'db'};
-    my $timer        = $self->{'timer'};
+    my $error_query  = $self->{'error_query'};
 
     $delay->steps(
         sub {
@@ -159,13 +173,13 @@ sub grab_page {
             for my $area (@$area_list) {
                 for my $list_page_url_tpl ( keys %$url_tpl_hash ) {
 
-                    my $page_list_url =
-                      sprintf( $list_page_url_tpl, $area, $page_index );
+                    my $page_list_url = sprintf( $list_page_url_tpl, $area, $page_index );
                     my $detail_url_tpl = $url_tpl_hash->{$list_page_url_tpl};
 
                     my $end = $task->begin(0);
 
                     my $delay_time = ( $area_index++ * 1 );
+
                     Mojo::IOLoop->timer(
                         $delay_time => sub {
                             $ua->get(
@@ -173,14 +187,9 @@ sub grab_page {
                                     my ( $ua, $tx ) = @_;
                                     my $url = $tx->req->url->to_string;
 
-                                    my $is_firewall =
-                                      check_firewall( $tx, $site_source );
-                                    if ( $is_firewall || $tx->res->error ) {
+                                    my $error_info = $self->check_req_error($tx);
+                                    if ($error_info) {
                                         $error_query->{error_counts}++;
-                                        my $error_info = $tx->res->error;
-                                        $error_info->{'exception'} =
-                                          '反爬虫，访问过快'
-                                          if $is_firewall;
                                         $error_query->{$url} = $error_info;
                                         $end->();
                                     }
@@ -194,9 +203,7 @@ sub grab_page {
                                           ->( $list_dom, $detail_url_tpl );
 
                                         # 去除处理过的 url
-                                        $self->exclude_urls_in_db( $handy_db,
-                                            $detail_page_urls_ref,
-                                            $site_source );
+                                        $self->exclude_urls_in_db($detail_page_urls_ref);
 
                                         $end->($detail_page_urls_ref);
                                     }
@@ -213,19 +220,10 @@ sub grab_page {
 
             my $process_count = 1;
 
-            #say "grab $site_source : page=> $page_index: $timer";
-
             for my $detail_page_urls_ref (@detail_page_urls_refs) {
 
-                while ( my ( $puid, $detail_page_url ) =
-                    each %$detail_page_urls_ref )
+                while ( my ( $puid, $detail_page_url ) = each %$detail_page_urls_ref )
                 {
-
-#                              my $error = $error_query->{error_counts} || 0;
-# 如果 $error 越来越大,就放慢速度.
-#                              $error = $error > 500 ? 500 : $error;
-#                              my $delay_time = ($process_count++) * 0.3 * (4/500 * $error + 1);
-
                     my $factor = 0.5;
                     if ( $site_source == ganji ) {
                         $factor = 1;
@@ -233,18 +231,13 @@ sub grab_page {
                     my $delay_time  = ( $process_count++ ) * $factor;
                     my $timer_delay = $delay->begin(0);
 
-#say "($site_source $page_index): time delay=> $delay_time, process_count=>  $process_count";
-
                     Mojo::IOLoop->timer(
                         $delay_time => sub {
                             $ua->get(
                                 $detail_page_url => sub {
                                     my ( $ua, $result ) = @_;
                                     ++( $self->{'grab_urls'} );
-                                    $self->process_detail_result(
-                                        $result,   $puid, $error_query,
-                                        $handy_db, $site_source
-                                    );
+                                    $self->process_detail_result($result,$puid);
                                     $timer_delay->();
                                 }
                             );
@@ -334,10 +327,13 @@ sub generate_detail_page_urls_ref_58 {
 
 # 排除已经处理过的 url
 sub exclude_urls_in_db {
-    my ( $self, $handy_db, $page_urls, $site_source ) = @_;
-    my @puids_from_web = keys %$page_urls;
-    my $city           = $self->{'city'};
+    my ( $self, $page_urls ) = @_;
+
+    my ($city,$handy_db,$site_source) = @$self{'city','db','site_source'};
+
+
     my $table_name     = 'grab_site_info_' . $city;
+    my @puids_from_web = keys %$page_urls;
 
     my $query_sql = qq{
 SELECT
@@ -358,8 +354,9 @@ WHERE i.site_source = $site_source and i.puid IN ('%s');
 
 # 保存 page info 到数据库
 sub save_page_info {
-    my ( $self, $handy_db, $page_info, $site_source ) = @_;
-    my $city       = $self->{'city'};
+    my ( $self, $page_info ) = @_;
+    my ($city,$handy_db,$site_source) = @$self{'city','handy_db','site_source'};
+
     my $table_name = 'grab_site_info_' . $city;
 
     # 写入数据库
@@ -398,36 +395,35 @@ VALUES
 }
 
 sub process_detail_result {
-    my ( $self, $result, $puid, $error_query, $handy_db, $site_source ) = @_;
+    my ( $self, $result, $puid ) = @_;
+
+    my ($error_query,$site_source) = @$self{'error_query','site_source'};
+
     my $detail_page_dom = $result->res->dom;
     my $url             = $result->req->url->to_string;
 
-    my $is_firewall = check_firewall( $result, $site_source );
-    if ( $is_firewall || $result->res->error ) {
-        ( $error_query->{error_counts} )++;
-        my $error_info = $result->res->error;
-        $error_info->{'exception'} = '反爬虫，访问过快' if $is_firewall;
+    my $error_info = $self->check_req_error($result);
+    if ($error_info) {
+        $error_query->{error_counts}++;
         $error_query->{$url} = $error_info;
         return;
     }
 
-    my $page_deleted = check_page_remove( $result->res );
+    my $page_deleted = $self->check_page_remove( $result->res );
     if ($page_deleted) {
         return;
     }
 
     try {
-        my $page_info =
-          $grab_detail_page_func->{$site_source}->($detail_page_dom);
+        my $page_info = $grab_detail_page_func->{$site_source}->($detail_page_dom);
         $page_info->{'url'}  = $url;
         $page_info->{'puid'} = $puid;
 
-        $self->save_page_info( $handy_db, $page_info, $site_source );
+        $self->save_page_info($page_info);
     }
     catch {
         if ( $_ !~ m/Duplicate entry/ ) {
             ( $error_query->{error_counts} )++;
-            my $error_info = $result->res->error;
             $error_info->{'exception'} = $_;
             $error_query->{$url} = $error_info;
         }
@@ -844,13 +840,12 @@ WHERE b.`site_source` = $site_source
         my $url  = $url_ref->{'url'};
 
         my $tx = $ua->get($url);
-        my $is_firewall = check_firewall( $tx, $site_source );
-        if ($is_firewall) {
-            Time::HiRes::sleep (5);
+        my $error_info = $self->check_req_error( $tx );
+        if ($error_info) {
             next;
         }
 
-        my $is_removed = check_page_remove( $tx->res );
+        my $is_removed = $self->check_page_remove( $tx->res );
 
         $handy_db->do("UPDATE $table_name b SET b.remove_from_site = ? ,b.`check_remove_time` = CURRENT_DATE() WHERE b.`id` = ?",undef, $is_removed, $uuid);
     }
@@ -860,7 +855,7 @@ WHERE b.`site_source` = $site_source
 }
 
 sub check_page_remove {
-    my ($res) = @_;
+    my ($self,$res) = @_;
     my $is_removed = 0;
 
     my $ganji_title = $res->dom->at('title') || '';
@@ -887,7 +882,7 @@ sub check_page_remove {
 }
 
 sub get_proxy_urls{
-
+    my ($self) = @_;
     my $ua = init_mojo();
 
     my $url_hash =();
