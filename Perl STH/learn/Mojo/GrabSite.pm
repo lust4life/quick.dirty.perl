@@ -355,7 +355,7 @@ WHERE i.site_source = $site_source and i.puid IN ('%s');
 # 保存 page info 到数据库
 sub save_page_info {
     my ( $self, $page_info ) = @_;
-    my ($city,$handy_db,$site_source) = @$self{'city','handy_db','site_source'};
+    my ($city,$handy_db,$site_source) = @$self{'city','db','site_source'};
 
     my $table_name = 'grab_site_info_' . $city;
 
@@ -887,13 +887,13 @@ sub check_page_remove {
 }
 
 sub get_proxy_urls{
-    my ($self) = @_;
+    my ($self,$total) = @_;
     my $ua = init_mojo();
 
     my $url_hash =();
     my @test_urls = ('http://cd.58.com/zufang/','http://hz.58.com/hezu/','http://cd.ganji.com/fang1/m1/','http://zu.cd.fang.com/house/n31/');
 
-    for (1..10) {
+    for (1..$total) {
         my $page = $_;
         my $delay_time = $page;
 

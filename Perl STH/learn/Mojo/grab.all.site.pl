@@ -25,7 +25,7 @@ use GrabSite;
 say "ready go!";
 
 my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
-my $proxy_urls = Grab::Site->get_proxy_urls();
+my $proxy_urls = Grab::Site->get_proxy_urls(10);
 
 my $pid_58 = fork();
 if ($pid_58) {
