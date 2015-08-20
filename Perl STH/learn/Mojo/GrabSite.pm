@@ -377,15 +377,16 @@ INSERT INTO `handy`.`$table_name` (
   `region_street`,
   `region_xiaoqu`,
   `peizhi_info`,
-  `rent_type`
+  `rent_type`,
+  `contact_link`
 )
 VALUES
-  ($site_source,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+  ($site_source,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
 };
 
     my @params =
       @{$page_info}{
-        qw(puid url price show_data address floor room_type room_space house_type house_decoration region_district region_street region_xiaoqu peizhi_info rent_type)
+        qw(puid url price show_data address floor room_type room_space house_type house_decoration region_district region_street region_xiaoqu peizhi_info rent_type contact_link)
       };
     my $sth = $handy_db->prepare($insert_sql);
 
@@ -621,6 +622,11 @@ sub grab_detail_page_58 {
                 $page_info->{room_type} = join( "-", @house_info[ 0, 1, 2 ] );
                 $page_info->{house_decoration} = $house_info[3];
             }
+            when ('联系'){
+                my $contact_dom = $row->at('span>a');
+
+                $page_info->{contact_link} = $contact_dom->attr('href');
+            }
         }
     }
 
@@ -832,7 +838,6 @@ WHERE b.`site_source` = $site_source
         $index++;
 
         if ( $index % 5 == 0 ) {
-            say "$site_source => $index / $total : $time";
             Time::HiRes::sleep (0.4);
         }
 
@@ -850,7 +855,7 @@ WHERE b.`site_source` = $site_source
         $handy_db->do("UPDATE $table_name b SET b.remove_from_site = ? ,b.`check_remove_time` = CURRENT_DATE() WHERE b.`id` = ?",undef, $is_removed, $uuid);
     }
 
-    say "detection_is_remove_from_site done: $time";
+    say "detection_is_remove_from_site $site_source => $total . done: $time";
     $self->reset_timer();
 }
 
@@ -917,7 +922,6 @@ sub get_proxy_urls{
                                                                                  }
                                                                              }
                                                                          });
-                                say $page;
                             });
     }
 
@@ -957,9 +961,7 @@ sub start {
             my $grab_urls = $self->{'grab_urls'};
             my $city      = $self->{'city'};
 
-
-            say
-"---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
+            say "---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
 
             my $is_last_page = $page_num == $page_total;
 
