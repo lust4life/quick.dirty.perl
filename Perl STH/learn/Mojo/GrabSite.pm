@@ -101,24 +101,31 @@ sub check_req_error {
 
     my $error_info = $tx->res->error;
 
+    my $url = $tx->req->url->to_string;
+    my $is_firewall = 0;
+
     if(!$error_info){
-        my $url = $tx->req->url->to_string;
-        my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
+
+        $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
 
         if($is_firewall){
             $error_info->{'exception'} = '反爬虫，访问过快';
+        }
+    }
 
-            if(!$no_change_proxy){
-                $url = uri_unescape($url);
-                $url =~ s!.*?=(http://.*)!$1!g;
-                my $proxy_set_ok = $self->change_proxy($url);
+    if ( !$no_change_proxy && $error_info ) {
 
-                if(!$proxy_set_ok){
-                    $error_info->{'exception'} = '爬虫代理切换失败';
-                }else{
-                    undef $error_info;
-                }
-            }
+        if($is_firewall){
+            $url = uri_unescape($url);
+            $url =~ s!.*?=(http://.*)!$1!g;
+        }
+
+        my $proxy_set_ok = $self->change_proxy($url);
+
+        if (!$proxy_set_ok) {
+            $error_info->{'exception'} = '爬虫代理切换失败';
+        } else {
+            undef $error_info;
         }
     }
 
