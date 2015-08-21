@@ -968,7 +968,7 @@ sub start {
             my $grab_urls = $self->{'grab_urls'};
             my $city      = $self->{'city'};
 
-            say "---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
+#            say "---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
 
             my $is_last_page = $page_num == $page_total;
 
