@@ -982,7 +982,8 @@ sub start {
                 $self->{page_num}++;
             }
 
-            if(DateTime->now->hour == 23){
+            # 如果到达凌晨 1 点 的话, 就停止. 时差 8 小时
+            if(DateTime->now->hour == 17){
                 exit;
             }
 
