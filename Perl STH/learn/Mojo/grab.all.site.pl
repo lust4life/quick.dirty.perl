@@ -20,51 +20,94 @@ use experimental 'smartmatch';
 use enum qw(f58 ganji fang);
 use List::Util qw(any);
 
-
-BEGIN{push(@INC,"e:/git/quick.dirty.perl/Perl STH/learn/DBIx-DataModel/");push(@INC,'e:/git/quick.dirty.perl/Perl STH/learn/Mojo/')};
-use HandyDataSource;
 use GrabSite;
-
-
-my ($page_ganji, $page_58, $page_fang) = (1,1,1);
-
-
 
 say "ready go!";
 
+my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
+my $proxy_urls = Grab::Site->get_proxy_urls(10);
 
 my $pid_58 = fork();
 if ($pid_58) {
 
-    my $grab_58 =  Grab::Site->new({
-                                    site_source => f58,
-                                    area_list => [qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)],
-                                    list_page_url_tpl => q(http://cd.58.com/%s/zufang/pn%d/),
-                                    page_total => 70,
-                                   });
+    my $pid_58_hang = fork();
+    if ($pid_58_hang) {
+        my $grab_58_hang = Grab::Site->new(
+                                           {
+                                            site_source => f58,
+                                            city        => 'hz',
+                                            area_list =>
+                                            [qw(xihuqu gongshu jianggan xiacheng hzshangcheng binjiang)],
+                                            url_tpl_hash => {
+                                                             q(http://hz.58.com/%s/zufang/pn%d/) =>
+                                                             q(http://hz.58.com/zufang/%s.shtml),
+                                                             q(http://hz.58.com/%s/hezu/pn%d/) =>
+                                                             q(http://hz.58.com/hezu/%s.shtml),
+                                                            },
+                                            page_total => 70,
+                                            proxy_urls => $proxy_urls,
+                                           }
+                                          );
 
-    $grab_58->start();
+        $grab_58_hang->start();
+    } else {
+        my $grab_58 = Grab::Site->new(
+                                      {
+                                       site_source => f58,
+                                       city        => 'cd',
+                                       area_list   => [
+                                                       qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)
+                                                      ],
+                                       url_tpl_hash => {
+                                                        q(http://cd.58.com/%s/zufang/pn%d/) =>
+                                                        q(http://cd.58.com/zufang/%s.shtml),
+                                                        q(http://cd.58.com/%s/hezu/pn%d/) =>
+                                                        q(http://hz.58.com/hezu/%s.shtml),
+                                                       },
+                                       page_total => 70,
+                                       proxy_urls => $proxy_urls,
+                                      }
+                                     );
+
+        $grab_58->start();
+    }
+
 } else {
     my $pid_fang = fork();
     if ($pid_fang) {
 
-        my $grab_fang =  Grab::Site->new({
-                                          site_source => fang,
-                                          area_list => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
-                                          list_page_url_tpl => q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/),
-                                          page_total => 100,
-                                         });
+        my $grab_fang = Grab::Site->new(
+                                        {
+                                         site_source => fang,
+                                         city        => 'cd',
+                                         area_list   => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
+                                         url_tpl_hash => {
+                                                          q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/) =>
+                                                          q(http://zu.cd.fang.com/%s),
+                                                         },
+                                         page_total => 100,
+                                         proxy_urls => $proxy_urls,
+                                        }
+                                       );
 
         $grab_fang->start();
     } else {
 
-        my $grab_ganji = Grab::Site->new({
+        my $grab_ganji = Grab::Site->new(
+                                         {
                                           site_source => ganji,
-                                          area_list => [qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)],
-                                          #area_list => [qw(wuhou)],
-                                          list_page_url_tpl => q(http://cd.ganji.com/fang1/%s/m1o%d/),
+                                          city        => 'cd',
+                                          area_list   => [
+                                                          qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)
+                                                         ],
+                                          url_tpl_hash => {
+                                                           q(http://cd.ganji.com/fang1/%s/m1o%d/) =>
+                                                           q(http://cd.ganji.com/fang1/%s),
+                                                          },
                                           page_total => 150,
-                                         });
+                                          proxy_urls => $proxy_urls,
+                                         }
+                                        );
 
         $grab_ganji->start();
 
@@ -72,7 +115,6 @@ if ($pid_58) {
 }
 
 Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
-
 
 __END__
 
