@@ -895,7 +895,9 @@ sub check_page_remove {
 
 sub get_proxy_urls{
     my ($self,$total) = @_;
-    my $ua = init_mojo();
+
+    my $ua = Mojo::UserAgent->new;
+    $ua = $ua->connect_timeout(1)->request_timeout(10)->max_redirects(2);
 
     my $url_hash =();
     my @test_urls = ('http://cd.58.com/zufang/','http://hz.58.com/hezu/','http://cd.ganji.com/fang1/m1/','http://zu.cd.fang.com/house/n31/');
@@ -906,7 +908,11 @@ sub get_proxy_urls{
 
         Mojo::IOLoop->timer($delay_time => sub{
                                 my ($delay) = @_;
-                                my $res = $ua->get("http://www.proxy-ip.cn/other/1/$page")->res;
+                                my $url = "http://www.proxy-ip.cn/other/1/$page";
+                                my $res = $ua->get($url)->res;
+                                if($res->error){
+                                    p $res->error;
+                                }
                                 my $dom = $res->dom;
                                 $dom->find('table.proxy_table tr')->each(sub{
                                                                              my ($tr) = @_;
