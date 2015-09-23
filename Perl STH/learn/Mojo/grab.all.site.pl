@@ -24,23 +24,22 @@ use GrabSite;
 
 say "ready go!";
 
-my $ua = Mojo::UserAgent->new();
-my $res =$ua->get('http://wh.58.com/zufang/23222519751840x.shtml')->res;
-my $res =$ua->get('http://cd.58.com/zufang/22481885308830x.shtml')->res;
+ my $ua = Mojo::UserAgent->new();
 
-my $html = $res->dom->all_text;
 
-#$html = decode('tf8',$html);
+ my $res =$ua->get('http://cd.58.com/zufang/23422428004894x.shtml')
+         ->res;
 
-if($html =~ m/要找的/g){
- say "fuck!";
-}
+ my $dom = $res->dom;
 
-__END__
+ my $info = GrabSite::grab_detail_page_58($dom);
+ p $info;
+
+exit;
 
 
 my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
-my $proxy_urls = Grab::Site->get_proxy_urls(1);
+my $proxy_urls = GrabSite->get_proxy_urls(1);
 
 
 my $pid_58 = fork();
@@ -48,7 +47,7 @@ if ($pid_58) {
 
     my $pid_58_hang = fork();
     if ($pid_58_hang) {
-        my $grab_58_hang = Grab::Site->new(
+        my $grab_58_hang = GrabSite->new(
                                            {
                                             site_source => f58,
                                             city        => 'hz',
@@ -69,7 +68,7 @@ if ($pid_58) {
     } else {
         my $pid_58_wuhan = fork();
         if ($pid_58_wuhan) {
-            my $grab_58_wh = Grab::Site->new(
+            my $grab_58_wh = GrabSite->new(
                                              {
                                               site_source => f58,
                                               city        => 'wh',
@@ -91,7 +90,7 @@ if ($pid_58) {
             $grab_58_wh->start();
         } else {
 
-            my $grab_58_cd = Grab::Site->new(
+            my $grab_58_cd = GrabSite->new(
                                              {
                                               site_source => f58,
                                               city        => 'cd',
@@ -118,7 +117,7 @@ if ($pid_58) {
     my $pid_fang = fork();
     if ($pid_fang) {
 
-        my $grab_fang = Grab::Site->new(
+        my $grab_fang = GrabSite->new(
                                         {
                                          site_source => fang,
                                          city        => 'cd',
@@ -135,7 +134,7 @@ if ($pid_58) {
         $grab_fang->start();
     } else {
 
-        my $grab_ganji = Grab::Site->new(
+        my $grab_ganji = GrabSite->new(
                                          {
                                           site_source => ganji,
                                           city        => 'cd',

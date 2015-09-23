@@ -28,14 +28,14 @@ say "ready go!";
 my $pid_58 = fork();
 if ($pid_58) {
 
-    my $grab_58 =  Grab::Site->new({
+    my $grab_58 =  GrabSite->new({
                                     site_source => f58,
                                     city => 'cd',
                                    });
 
     $grab_58->detection_is_remove_from_site();
 
-    $grab_58 =  Grab::Site->new({
+    $grab_58 =  GrabSite->new({
                                     site_source => f58,
                                     city => 'hz',
                                    });
@@ -47,7 +47,7 @@ if ($pid_58) {
     my $pid_fang = fork();
     if ($pid_fang) {
 
-        my $grab_fang =  Grab::Site->new({
+        my $grab_fang =  GrabSite->new({
                                           site_source => fang,
                                           city => 'cd',
                                          });
@@ -57,7 +57,7 @@ if ($pid_58) {
 
     } else {
 
-        my $grab_ganji = Grab::Site->new({
+        my $grab_ganji = GrabSite->new({
                                           site_source => ganji,
                                           city => 'cd',
                                          });
