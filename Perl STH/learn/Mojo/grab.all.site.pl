@@ -24,9 +24,23 @@ use GrabSite;
 
 say "ready go!";
 
+my $ua = Mojo::UserAgent->new();
+my $res =$ua->get('http://wh.58.com/zufang/23222519751840x.shtml')->res;
+my $res =$ua->get('http://cd.58.com/zufang/22481885308830x.shtml')->res;
+
+my $html = $res->dom->all_text;
+
+#$html = decode('tf8',$html);
+
+if($html =~ m/要找的/g){
+ say "fuck!";
+}
+
+__END__
+
 
 my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
-my $proxy_urls = Grab::Site->get_proxy_urls(10);
+my $proxy_urls = Grab::Site->get_proxy_urls(1);
 
 
 my $pid_58 = fork();

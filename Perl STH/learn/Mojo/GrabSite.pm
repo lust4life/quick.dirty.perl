@@ -1,4 +1,4 @@
-package Grab::Site;
+package GrabSite;
 
 use strict;
 use warnings;
@@ -167,9 +167,6 @@ sub change_proxy{
             return $tx;
         }
     }
-
-
-    say "proxy change failed...";
 
     init_mojo(); # 还原为最初的本机 ip
     return undef;
@@ -444,6 +441,11 @@ sub process_detail_result {
         $page_info->{'url'}  = $url;
         $page_info->{'puid'} = $puid;
 
+        if(!$page_info->{'room_space'}){
+            p $tx->res->dom;
+            exit;
+        }
+
         $self->save_page_info($page_info);
     }
     catch {
@@ -648,7 +650,7 @@ sub grab_detail_page_58 {
             when ('联系'){
                 my $contact_dom = $row->at('span>a');
 
-                $page_info->{contact_link} = $contact_dom->attr('href');
+                $page_info->{contact_link} = $contact_dom->attr('href') if $contact_dom;
             }
         }
     }
@@ -992,8 +994,6 @@ sub start {
             my $timer     = $self->{'timer'};
             my $grab_urls = $self->{'grab_urls'};
             my $city      = $self->{'city'};
-
-#            say "---------------- done grab $city site=> $site_source, page=> $page_num, time=> $timer, urls=> $grab_urls";
 
             my $is_last_page = $page_num == $page_total;
 
