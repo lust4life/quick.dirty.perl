@@ -24,6 +24,7 @@ use GrabSite;
 
 say "ready go!";
 
+
 my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
 my $proxy_urls = Grab::Site->get_proxy_urls(10);
 
@@ -52,25 +53,51 @@ if ($pid_58) {
 
         $grab_58_hang->start();
     } else {
-        my $grab_58 = Grab::Site->new(
-                                      {
-                                       site_source => f58,
-                                       city        => 'cd',
-                                       area_list   => [
-                                                       qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)
-                                                      ],
-                                       url_tpl_hash => {
-                                                        q(http://cd.58.com/%s/zufang/pn%d/) =>
-                                                        q(http://cd.58.com/zufang/%s.shtml),
-                                                        q(http://cd.58.com/%s/hezu/pn%d/) =>
-                                                        q(http://hz.58.com/hezu/%s.shtml),
-                                                       },
-                                       page_total => 70,
-                                       proxy_urls => $proxy_urls,
-                                      }
-                                     );
+        my $pid_58_wuhan = fork();
+        if ($pid_58_wuhan) {
+            my $grab_58_wh = Grab::Site->new(
+                                             {
+                                              site_source => f58,
+                                              city        => 'wh',
+                                              area_list   => [
+                                                              qw(jiangan jianghan qiaokou hanyang wuchang whqingshanqu hongshan dongxihu hannan caidian jiangxia huangpo xinzhouqu whtkfq)
+                                                             ],
+                                              url_tpl_hash => {
+                                                               q(http://wh.58.com/%s/zufang/pn%d/) =>
+                                                               q(http://wh.58.com/zufang/%s.shtml),
+                                                               q(http://wh.58.com/%s/hezu/pn%d/) =>
+                                                               q(http://wh.58.com/hezu/%s.shtml),
+                                                              },
+                                              page_total => 70,
+                                              proxy_urls => $proxy_urls,
+                                             }
+                                            );
 
-        $grab_58->start();
+
+            $grab_58_wh->start();
+        } else {
+
+            my $grab_58_cd = Grab::Site->new(
+                                             {
+                                              site_source => f58,
+                                              city        => 'cd',
+                                              area_list   => [
+                                                              qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)
+                                                             ],
+                                              url_tpl_hash => {
+                                                               q(http://cd.58.com/%s/zufang/pn%d/) =>
+                                                               q(http://cd.58.com/zufang/%s.shtml),
+                                                               q(http://cd.58.com/%s/hezu/pn%d/) =>
+                                                               q(http://cd.58.com/hezu/%s.shtml),
+                                                              },
+                                              page_total => 70,
+                                              proxy_urls => $proxy_urls,
+                                             }
+                                            );
+
+            $grab_58_cd->start();
+        }
+
     }
 
 } else {

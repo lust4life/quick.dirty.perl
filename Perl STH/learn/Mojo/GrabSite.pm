@@ -27,6 +27,7 @@ use List::Util qw(any);
 
 use HandyDataSource;
 
+
 my $generate_detail_page_urls_ref_func = {
     '0' => \&generate_detail_page_urls_ref_58,
     '1' => \&generate_detail_page_urls_ref_ganji,
@@ -96,70 +97,82 @@ sub init_error_info {
     $self->{'grab_urls'}   = 0;
 }
 
-sub check_req_error {
-    my ($self,$tx,$no_change_proxy) = @_;
+sub ensure_req_ok{
+    my ($self,$tx) = @_;
 
-    my $error_info = $tx->res->error;
+    my $result_info = {
+                       'success' => 1,
+                       'tx' => $tx
+                      };
 
     my $url = $tx->req->url->to_string;
-    my $is_firewall = 0;
 
-    if(!$error_info){
+    my $error = $tx->res->error;
 
-        $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
 
-        if($is_firewall){
-            $error_info->{'exception'} = '反爬虫，访问过快';
-        }
-    }
+    my $is_req_firewall = $self->is_req_firewall($tx);
 
-    if ( !$no_change_proxy && $error_info ) {
+    if ( $error || $is_req_firewall) {
 
-        if($is_firewall){
+        if($is_req_firewall){
             $url = uri_unescape($url);
             $url =~ s!.*?=(http://.*)!$1!g;
         }
 
-        my $proxy_set_ok = $self->change_proxy($url);
+        my $ok_tx = $self->change_proxy($url);
 
-        if (!$proxy_set_ok) {
-            $error_info->{'exception'} = '爬虫代理切换失败';
+        if ($ok_tx) {
+            # 切换成功, 返回使用
+            $result_info->{'success'} = 1;
+            $result_info->{'tx'} = $ok_tx;
+
         } else {
-            undef $error_info;
-        }
+            # 切换失败,返回失败信息
+
+            $result_info->{'success'} = 0;
+
+            if($is_req_firewall){
+                $error->{'exception'} = 'firewall';
+            }
+
+            $result_info->{'error'} = $error;
+         }
     }
 
-    return $error_info;
+    return $result_info;
 }
+
+sub is_req_firewall{
+    my ($self,$tx) = @_;
+
+    my $url = $tx->req->url->to_string;
+    my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
+
+    return $is_firewall;
+}
+
 
 sub change_proxy{
     my ($self,$test_url) = @_;
-
-    my $proxy_set_ok = 0;
-
-    if(!$proxy_urls){
-        return $proxy_set_ok;
-    }
-
 
     for my $proxy_url(@$proxy_urls){
         $ua->proxy->http($proxy_url);
 
         my $tx =$ua->get($test_url);
 
-        my $error_info = $self->check_req_error($tx,1);
-        if(!$error_info){
-            $proxy_set_ok = 1;
-            say "$test_url => firewall --------- $proxy_url";
-            last;
+        my $error_info = $tx->res->error;
+        my $is_req_firewall = $self->is_req_firewall($tx);
+
+        if(!$error_info && !$is_req_firewall){
+            return $tx;
         }
     }
 
-    if(!$proxy_set_ok){
-        init_mojo();
-    }
 
-    return $proxy_set_ok;
+    say "proxy change failed...";
+
+    init_mojo(); # 还原为最初的本机 ip
+    return undef;
 }
 
 
@@ -192,15 +205,17 @@ sub grab_page {
                             $ua->get(
                                 $page_list_url => sub {
                                     my ( $ua, $tx ) = @_;
-                                    my $url = $tx->req->url->to_string;
 
-                                    my $error_info = $self->check_req_error($tx);
-                                    if ($error_info) {
+                                    my $result_info = $self->ensure_req_ok($tx);
+                                    if (!$result_info->{'success'}) {
                                         $error_query->{error_counts}++;
-                                        $error_query->{$url} = $error_info;
+                                        my $url = $tx->req->url->to_string;
+                                        $error_query->{$url} = $result_info->{'error'};
                                         $end->();
                                     }
                                     else {
+                                        $tx = $result_info->{'tx'};
+
                                         my $list_dom = $tx->res->dom;
 
                                         # 分析 dom
@@ -403,27 +418,29 @@ VALUES
 }
 
 sub process_detail_result {
-    my ( $self, $result, $puid ) = @_;
+    my ( $self, $tx, $puid ) = @_;
 
     my ($error_query,$site_source) = @$self{'error_query','site_source'};
 
-    my $detail_page_dom = $result->res->dom;
-    my $url             = $result->req->url->to_string;
+    my $result_info = $self->ensure_req_ok($tx);
 
-    my $error_info = $self->check_req_error($result);
-    if ($error_info) {
+    if (!$result_info->{'success'}) {
         $error_query->{error_counts}++;
-        $error_query->{$url} = $error_info;
+        my $url             = $tx->req->url->to_string;
+        $error_query->{$url} = $result_info->{'error'};
         return;
     }
 
-    my $page_deleted = $self->check_page_remove( $result->res );
+    $tx = $result_info->{'tx'};
+    my $url = $tx->req->url->to_string;
+
+    my $page_deleted = $self->check_page_remove( $tx->res );
     if ($page_deleted) {
         return;
     }
 
     try {
-        my $page_info = $grab_detail_page_func->{$site_source}->($detail_page_dom);
+        my $page_info = $grab_detail_page_func->{$site_source}->($tx->res->dom);
         $page_info->{'url'}  = $url;
         $page_info->{'puid'} = $puid;
 
@@ -432,8 +449,7 @@ sub process_detail_result {
     catch {
         if ( $_ !~ m/Duplicate entry/ ) {
             ( $error_query->{error_counts} )++;
-            $error_info->{'exception'} = $_;
-            $error_query->{$url} = $error_info;
+            $error_query->{$url} = {'exception' => $_};
         }
     };
 }
@@ -852,8 +868,11 @@ WHERE b.`site_source` = $site_source
         my $url  = $url_ref->{'url'};
 
         my $tx = $ua->get($url);
-        my $error_info = $self->check_req_error( $tx );
-        if ($error_info) {
+
+        my $error = $tx->res->error;
+        my $is_req_firewall = $self->is_req_firewall($tx);
+
+        if ($error || $is_req_firewall) {
             next;
         }
 
