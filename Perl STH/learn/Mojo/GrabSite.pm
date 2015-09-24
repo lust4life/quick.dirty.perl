@@ -453,7 +453,9 @@ sub process_detail_result {
         $page_info->{'url'}  = $url;
         $page_info->{'puid'} = $puid;
 
-#        if (! exists  $page_info->{'room_space'} ) {} # 暂时不处理,看看是否还有该类情况,有的话就跳过 Save
+        if (! exists  $page_info->{'room_space'} ) {
+            return;
+        } # 暂时不处理,看看是否还有该类情况,有的话就跳过 Save
 
         $self->save_page_info($page_info);
     }
@@ -1021,7 +1023,7 @@ sub start {
                 exit;
             }
 
-# 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
+            # 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.
             my $next_time = $grab_urls ? 1 : 60;
 
             Mojo::IOLoop->timer(
