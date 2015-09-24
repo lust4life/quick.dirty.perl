@@ -42,6 +42,14 @@ if ($pid_58) {
 
     $grab_58->detection_is_remove_from_site();
 
+    $grab_58 =  GrabSite->new({
+                                    site_source => f58,
+                                    city => 'wh',
+                                   });
+
+    $grab_58->detection_is_remove_from_site();
+
+
 } else {
 
     my $pid_fang = fork();

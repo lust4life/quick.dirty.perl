@@ -147,6 +147,11 @@ sub is_req_firewall {
 
     my $url = $tx->req->url->to_string;
     my $is_firewall = ( $url =~ m/firewall/ ) || ( $url =~ m/confirm/ );
+    if(!$is_firewall){
+        my $html = $tx->res->text;
+        $is_firewall = $html =~ m/你的访问过于频繁/g;
+    }
+
 
     return $is_firewall;
 }
@@ -423,13 +428,8 @@ sub process_detail_result {
 
     my ( $error_query, $site_source ) = @$self{ 'error_query', 'site_source' };
 
-    my $page_deleted = $self->check_page_remove( $tx->res );
-    if ($page_deleted) {
-        return;
-    }
 
     my $url = $tx->req->url->to_string;
-
     my $result_info = $self->ensure_req_ok($tx);
 
     if ( !$result_info->{'success'} ) {
@@ -439,6 +439,12 @@ sub process_detail_result {
     }
 
     $tx  = $result_info->{'tx'};
+
+    my $page_deleted = $self->check_page_remove( $tx->res );
+    if ($page_deleted) {
+        return;
+    }
+
     $url = $tx->req->url->to_string;
 
     try {
@@ -447,12 +453,7 @@ sub process_detail_result {
         $page_info->{'url'}  = $url;
         $page_info->{'puid'} = $puid;
 
-        if (! exists  $page_info->{'room_space'} ) {
-            p $page_info;
-            p $tx->res->to_string;
-            p $ua->proxy;
-            exit;
-        }
+#        if (! exists  $page_info->{'room_space'} ) {} # 暂时不处理,看看是否还有该类情况,有的话就跳过 Save
 
         $self->save_page_info($page_info);
     }
@@ -900,6 +901,10 @@ WHERE b.`site_source` = $site_source
 sub check_page_remove {
     my ( $self, $res ) = @_;
 
+    if($res->error){
+        return 0;
+    }
+
     if ( $res->code == 404 ) {
         return 1;
     }
@@ -1013,7 +1018,7 @@ sub start {
 
             # 如果到达凌晨 1 点 的话, 就停止. 时差 8 小时
             if ( DateTime->now->hour >= 17 ) {
-                #exit;
+                exit;
             }
 
 # 如果 grab_urls 为 0 代表当页没有新的数据或者是爬虫抓取太快. 暂停一会儿.

@@ -25,13 +25,13 @@ use GrabSite;
 say "ready go!";
 
 # my $ua = Mojo::UserAgent->new();
-# $ua->proxy->http('http://www.baidu.com');
+# $ua->proxy->http('http://120.198.231.88:80');
+
 #p $ua->proxy->http;
-#my $res = $ua->get('http://hz.58.com/zufang/23421091873289x.shtml')->res;
+#$res->content->asset->move_to("test.html");
+#my $dom = $res->dom;
 
- #my $dom = $res->dom;
-
-# my $info = GrabSite::check_page_remove(undef,$res);
+# my $info = GrabSite::grab_detail_page_58($res->dom);
 # p $info;
 
 # exit;
