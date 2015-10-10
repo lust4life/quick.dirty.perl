@@ -37,7 +37,7 @@ say "ready go!";
 # exit;
 
 my ( $page_ganji, $page_58, $page_fang ) = ( 1, 1, 1 );
-my $proxy_urls = GrabSite->get_proxy_urls(0);
+my $proxy_urls = GrabSite->get_proxy_urls(10);
 
 my $pid_58 = fork();
 if ($pid_58) {
