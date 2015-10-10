@@ -882,19 +882,20 @@ WHERE b.`site_source` = $site_source
 
         my $tx = $ua->get($url);
 
-        my $error           = $tx->res->error;
         my $is_req_firewall = $self->is_req_firewall($tx);
 
-        if ( $error || $is_req_firewall ) {
+        if ( $is_req_firewall ) {
             next;
         }
 
         my $is_removed = $self->check_page_remove( $tx->res );
 
-        $handy_db->do(
-"UPDATE $table_name b SET b.remove_from_site = ? ,b.`check_remove_time` = CURRENT_DATE() WHERE b.`id` = ?",
-            undef, $is_removed, $uuid
-        );
+        if($is_removed){
+            $handy_db->do(
+                          "UPDATE $table_name b SET b.remove_from_site = 1 ,b.`check_remove_time` = CURRENT_DATE() WHERE b.`id` = ?",
+                          undef,$uuid
+                         );
+        }
     }
 
     say "detection_is_remove_from_site $site_source => $total . done: $time";
@@ -904,12 +905,12 @@ WHERE b.`site_source` = $site_source
 sub check_page_remove {
     my ( $self, $res ) = @_;
 
-    if($res->error){
-        return 0;
-    }
-
     if ( $res->code == 404 ) {
         return 1;
+    }
+
+    if($res->error){
+        return 0;
     }
 
     my $site_58_body = $res->text;
