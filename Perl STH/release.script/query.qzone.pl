@@ -31,13 +31,13 @@ $ua->cookie_jar->add(
             $ua->cookie_jar->add(
                 Mojo::Cookie::Response->new(
                     name   => 'skey',
-                    value  => '@JuO2e9YDP',
+                    value  => '@OZavJxqqr', # 每次修改
                     domain => '.qq.com',
                     path   => '/'
                 )
             );
 
-my $g_tk = q(461388752);
+my $g_tk = q(2104389563);  # 每次修改
 
 my $query_url_fomat =
         q(http://taotao.qq.com/cgi-bin/emotion_cgi_msglist_v6?pos=%d&num=%d&code_version=1&format=json&g_tk=%s);
@@ -104,24 +104,24 @@ sub generate_org_file {
     my $pics = $msg->{'pics'};
 
     my $org_content = <<'end_org';
+#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+OPTIONS: author:t c:nil creator:nil d:(not "LOGBOOK") date:t e:t
+#+OPTIONS: email:nil f:t inline:t num:nil p:nil pri:nil prop:nil
+#+OPTIONS: stat:t tags:t tasks:t tex:t timestamp:t title:t toc:t
+#+OPTIONS: todo:t |:t
 #+TITLE: %s
 #+DATE: %s
 #+AUTHOR: $+j
 #+EMAIL: lust4life.jun@gmail.com
-#+OPTIONS: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
-#+OPTIONS: author:t c:nil creator:comment d:(not "LOGBOOK") date:t
-#+OPTIONS: e:t email:nil f:t inline:t num:t p:nil pri:nil stat:t
-#+OPTIONS: tags:t tasks:t tex:t timestamp:t toc:t todo:t |:t
-#+CREATOR: Emacs 24.4.1 (Org mode 8.2.10)
-#+DESCRIPTION:
-#+EXCLUDE_TAGS: noexport
-#+KEYWORDS:
 #+LANGUAGE: zh
 #+SELECT_TAGS: export
+#+EXCLUDE_TAGS: noexport
+#+CREATOR: Emacs 24.5.1 (Org mode 8.3.1)
 
 %s
 
 %s
+
 end_org
 
     my $words = $msg->{'msg'};
