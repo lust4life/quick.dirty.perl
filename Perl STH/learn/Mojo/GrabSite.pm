@@ -325,7 +325,7 @@ sub generate_detail_page_urls_ref_58 {
     $tr_doms->each(
         sub {
             my ($dom) = @_;
-            my $url = $dom->at('h1>a[href]:nth-child(1)')->attr('href');
+            my $url = $dom->at('td>a[href]:nth-child(1)')->attr('href');
 
             if ( !$url ) {
                 return;

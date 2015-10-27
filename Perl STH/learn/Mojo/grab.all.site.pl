@@ -45,110 +45,133 @@ if ($pid_58) {
     my $pid_58_hang = fork();
     if ($pid_58_hang) {
         my $grab_58_hang = GrabSite->new(
-            {
-                site_source => f58,
-                city        => 'hz',
-                area_list =>
-                  [qw(xihuqu gongshu jianggan xiacheng hzshangcheng binjiang)],
-                url_tpl_hash => {
-                    q(http://hz.58.com/%s/zufang/pn%d/) =>
-                      q(http://hz.58.com/zufang/%s.shtml),
-                    q(http://hz.58.com/%s/hezu/pn%d/) =>
-                      q(http://hz.58.com/hezu/%s.shtml),
-                },
-                page_total => 70,
-                proxy_urls => $proxy_urls,
-            }
-        );
+                                         {
+                                          site_source => f58,
+                                          city        => 'hz',
+                                          area_list =>
+                                          [qw(xihuqu gongshu jianggan xiacheng hzshangcheng binjiang)],
+                                          url_tpl_hash => {
+                                                           q(http://hz.58.com/%s/zufang/pn%d/) =>
+                                                           q(http://hz.58.com/zufang/%s.shtml),
+                                                           q(http://hz.58.com/%s/hezu/pn%d/) =>
+                                                           q(http://hz.58.com/hezu/%s.shtml),
+                                                          },
+                                          page_total => 70,
+                                          proxy_urls => $proxy_urls,
+                                         }
+                                        );
 
         $grab_58_hang->start();
-    }
-    else {
+    } else {
         my $pid_58_wuhan = fork();
         if ($pid_58_wuhan) {
             my $grab_58_wh = GrabSite->new(
-                {
-                    site_source => f58,
-                    city        => 'wh',
-                    area_list   => [
-                        qw(jiangan jianghan qiaokou hanyang wuchang whqingshanqu hongshan dongxihu hannan caidian jiangxia huangpo xinzhouqu whtkfq)
-                    ],
-                    url_tpl_hash => {
-                        q(http://wh.58.com/%s/zufang/pn%d/) =>
-                          q(http://wh.58.com/zufang/%s.shtml),
-                        q(http://wh.58.com/%s/hezu/pn%d/) =>
-                          q(http://wh.58.com/hezu/%s.shtml),
-                    },
-                    page_total => 70,
-                    proxy_urls => $proxy_urls,
-                }
-            );
+                                           {
+                                            site_source => f58,
+                                            city        => 'wh',
+                                            area_list   => [
+                                                            qw(jiangan jianghan qiaokou hanyang wuchang whqingshanqu hongshan dongxihu hannan caidian jiangxia huangpo xinzhouqu whtkfq)
+                                                           ],
+                                            url_tpl_hash => {
+                                                             q(http://wh.58.com/%s/zufang/pn%d/) =>
+                                                             q(http://wh.58.com/zufang/%s.shtml),
+                                                             q(http://wh.58.com/%s/hezu/pn%d/) =>
+                                                             q(http://wh.58.com/hezu/%s.shtml),
+                                                            },
+                                            page_total => 70,
+                                            proxy_urls => $proxy_urls,
+                                           }
+                                          );
 
             $grab_58_wh->start();
-        }
-        else {
+        } else {
 
-            my $grab_58_cd = GrabSite->new(
-                {
-                    site_source => f58,
-                    city        => 'cd',
-                    area_list   => [
-                        qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)
-                    ],
-                    url_tpl_hash => {
-                        q(http://cd.58.com/%s/zufang/pn%d/) =>
-                          q(http://cd.58.com/zufang/%s.shtml),
-                        q(http://cd.58.com/%s/hezu/pn%d/) =>
-                          q(http://cd.58.com/hezu/%s.shtml),
-                    },
-                    page_total => 70,
-                    proxy_urls => $proxy_urls,
-                }
-            );
+            my $pid_58_cd = fork();
+            if ($pid_58_cd) {
+                my $grab_58_cd = GrabSite->new(
+                                               {
+                                                site_source => f58,
+                                                city        => 'cd',
+                                                area_list   => [
+                                                                qw(wuhou jinjiang chenghua jinniu qingyangqu cdgaoxin gaoxinxiqu)
+                                                               ],
+                                                url_tpl_hash => {
+                                                                 q(http://cd.58.com/%s/zufang/pn%d/) =>
+                                                                 q(http://cd.58.com/zufang/%s.shtml),
+                                                                 q(http://cd.58.com/%s/hezu/pn%d/) =>
+                                                                 q(http://cd.58.com/hezu/%s.shtml),
+                                                                },
+                                                page_total => 70,
+                                                proxy_urls => $proxy_urls,
+                                               }
+                                              );
 
-            $grab_58_cd->start();
+                $grab_58_cd->start();
+
+            } else {
+
+                my $grab_58_bj = GrabSite->new(
+                                               {
+                                                site_source => f58,
+                                                city        => 'bj',
+                                                area_list   => [
+                                                                qw(chaoyang haidian dongcheng xicheng chongwen xuanwu fengtai tongzhouqu shijingshan fangshan changping daxing shunyi miyun huairou yanqing pinggu mentougou bjyanjiao)
+                                                               ],
+                                                url_tpl_hash => {
+                                                                 q(http://bj.58.com/%s/zufang/pn%d/) =>
+                                                                 q(http://bj.58.com/zufang/%s.shtml),
+                                                                 q(http://bj.58.com/%s/hezu/pn%d/) =>
+                                                                 q(http://bj.58.com/hezu/%s.shtml),
+                                                                },
+                                                page_total => 70,
+                                                proxy_urls => $proxy_urls,
+                                               }
+                                              );
+
+                $grab_58_bj->start();
+
+            }
+
         }
 
     }
 
-}
-else {
+} else {
     my $pid_fang = fork();
     if ($pid_fang) {
 
         my $grab_fang = GrabSite->new(
-            {
-                site_source => fang,
-                city        => 'cd',
-                area_list   => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
-                url_tpl_hash => {
-                    q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/) =>
-                      q(http://zu.cd.fang.com/%s),
-                },
-                page_total => 100,
-                proxy_urls => $proxy_urls,
-            }
-        );
+                                      {
+                                       site_source => fang,
+                                       city        => 'cd',
+                                       area_list   => [qw(a0132 a0129 a0131 a0133 a0130 a0136 a01156)],
+                                       url_tpl_hash => {
+                                                        q(http://zu.cd.fang.com/house-%s/h31-i3%d-n31/) =>
+                                                        q(http://zu.cd.fang.com/%s),
+                                                       },
+                                       page_total => 100,
+                                       proxy_urls => $proxy_urls,
+                                      }
+                                     );
 
         $grab_fang->start();
-    }
-    else {
+    } else {
 
         my $grab_ganji = GrabSite->new(
-            {
-                site_source => ganji,
-                city        => 'cd',
-                area_list   => [
-                    qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)
-                ],
-                url_tpl_hash => {
-                    q(http://cd.ganji.com/fang1/%s/m1o%d/) =>
-                      q(http://cd.ganji.com/fang1/%s),
-                },
-                page_total => 150,
-                proxy_urls => $proxy_urls,
-            }
-        );
+                                       {
+                                        site_source => ganji,
+                                        city        => 'cd',
+                                        area_list   => [
+                                                        qw(wuhou qingyang jinniu jinjiang chenghua gaoxing gaoxingxiqu)
+                                                       ],
+                                        url_tpl_hash => {
+                                                         q(http://cd.ganji.com/fang1/%s/m1o%d/) =>
+                                                         q(http://cd.ganji.com/fang1/%s),
+                                                        },
+                                        page_total => 150,
+                                        proxy_urls => $proxy_urls,
+                                       }
+                                      );
 
         $grab_ganji->start();
 
