@@ -9,7 +9,7 @@ for @names -> $name {
     say "my name is => $name";
 }
 
-my @lines = "array.pl6".IO.lines;
+my @lines = "./Perl6/array.pl6".IO.lines;
 
 .say for keys(@lines ∩ ("use v6;", 'say @names;'));
 
@@ -128,8 +128,9 @@ for ^5 -> $a {
   sub foo {
     state $val = rand; # This will be a different value for every value of `$a`
   }
-  for ^5 -> $b {
+  for ^1 -> $b {
     say foo; # This will print the same value 5 times, but only 5.
              # Next iteration will re-run `rand`.
   }
 }
+
