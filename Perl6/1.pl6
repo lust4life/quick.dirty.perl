@@ -23,3 +23,7 @@ given $num {
         say "default";   
     }
 }
+
+if 12 == 1|12|21 {
+    say "junctions";
+}
