@@ -12,3 +12,19 @@ for @names -> $name {
 my @lines = "array.pl".IO.lines;
 
 .say for keys(@lines ∩ ("use v6;", 'say @names;'));
+
+# here is the comment
+
+say #`(here is mutiline comments
+hello !!!
+) "embedded comments";
+
+
+
+=begin comment
+This is a multi line comment.
+Comment 1
+Comment 2
+=end comment
+
+say "multi line";
