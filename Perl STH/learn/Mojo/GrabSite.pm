@@ -12,6 +12,7 @@ use Mojo::UserAgent;
 use Encode;
 use Path::Tiny;
 use DateTime;
+use Date::Parse;
 use Mojo::JSON qw(encode_json decode_json);
 use Timer::Simple;
 use Try::Tiny;
@@ -325,7 +326,7 @@ sub generate_detail_page_urls_ref_58 {
     $tr_doms->each(
         sub {
             my ($dom) = @_;
-            my $url = $dom->at('h1>a[href]:nth-child(1)')->attr('href');
+            my $url = $dom->at('td>a[href]:nth-child(1)')->attr('href');
 
             if ( !$url ) {
                 return;
@@ -413,12 +414,14 @@ VALUES
   ($site_source,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW());
 };
 
+    my $sth = $handy_db->prepare($insert_sql);
+
     my @params =
       @{$page_info}{
         qw(puid url price show_data address floor room_type room_space house_type house_decoration region_district region_street region_xiaoqu peizhi_info rent_type contact_link)
       };
-    my $sth = $handy_db->prepare($insert_sql);
 
+    $params[3] = Date::Parse::str2time($params[3]);
     # peizhi int 结构
     $sth->bind_param( 14, $params[13], SQL_INTEGER );
     $sth->execute(@params);
