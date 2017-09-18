@@ -1,6 +1,7 @@
 use v6;
 
 sub MAIN(Bool :$remove){
+    run <git fetch -p>;
     my $git-br = run :out, <git branch -v>;
     my @removed-brs;
     for $git-br.out.lines -> $br-info {
